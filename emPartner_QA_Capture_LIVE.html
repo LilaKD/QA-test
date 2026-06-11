@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>emPartner&trade; CRM QA Capture (LIVE build)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+  :root{
+    --blue:#31B0E3; --blue-dark:#1E8FBC; --blue-light:#E6F4FB;
+    --teal:#3FBFBF; --gold:#EFBD19; --gold-light:#FDF4DA;
+    --red:#C94246; --green:#0F6E56; --navy:#0F2B3C;
+    --bg:#F7F8FA; --border:#E2E8F0; --muted:#A0AEC0; --ink:#3A4A55;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--navy);font-size:14px;line-height:1.5}
+  .num{font-family:'DM Mono',ui-monospace,monospace}
+  button{font-family:inherit;cursor:pointer;border:none}
+  textarea,input{font-family:inherit}
+  textarea:focus,input:focus,.dropzone:focus{outline:2px solid var(--blue);outline-offset:1px}
+  button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+  /* top bar */
+  .topbar{position:sticky;top:0;z-index:30;background:var(--navy);color:#fff;padding:11px 18px}
+  .toprow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px}
+  .brand-dot{width:9px;height:9px;border-radius:99px;background:var(--blue)}
+  .sub{font-size:12px;color:#9FB3C0}
+  .tb-input{background:#16384B;color:#fff;border:1px solid #2A4E62;border-radius:8px;padding:7px 10px;font-size:13px}
+  .tb-input::placeholder{color:#6E889A}
+  .viewbtns{display:flex;gap:4px;background:#16384B;border:1px solid #2A4E62;border-radius:9px;padding:3px}
+  .viewbtns button{background:transparent;color:#CFE0EA;border-radius:7px;padding:6px 12px;font-size:13px;font-weight:600}
+  .viewbtns button.on{background:var(--blue);color:#fff}
+  .progwrap{display:flex;align-items:center;gap:10px;margin-top:11px}
+  .progbar{flex:1;height:8px;background:#1C455B;border-radius:99px;overflow:hidden;display:flex}
+  .progbar i{display:block;height:100%}
+  .legend{display:flex;gap:14px;margin-top:7px;font-size:12px;flex-wrap:wrap}
+  .legend span{display:flex;align-items:center;gap:5px;color:#9FB3C0}
+  .ldot{width:9px;height:9px;border-radius:3px}
+
+  /* layout */
+  .shell{max-width:1180px;margin:0 auto;display:flex;align-items:flex-start;gap:18px;padding:18px}
+  aside{width:252px;flex-shrink:0;position:sticky;top:128px}
+  .card{background:#fff;border:1px solid var(--border);border-radius:14px}
+  .sidecard{padding:8px}
+  .secnode{width:100%;text-align:left;background:transparent;border-radius:9px;padding:9px 10px;display:flex;align-items:center;gap:9px;margin-bottom:2px}
+  .secnode:hover{background:var(--blue-light)}
+  .secnode.on{background:var(--blue-light)}
+  .secbadge{width:23px;height:23px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:#EDF1F5;color:var(--navy)}
+  .sectext{flex:1;font-size:12.5px;line-height:1.25}
+  .secct{font-size:10.5px;color:var(--muted)}
+  main{flex:1;min-width:0}
+
+  .mhead{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+  .mhead h2{margin:0;font-size:19px}
+  .filterbtns{margin-left:auto;display:flex;gap:4px;background:#fff;border:1px solid var(--border);border-radius:9px;padding:3px}
+  .filterbtns button{background:transparent;color:var(--navy);border-radius:7px;padding:5px 11px;font-size:12px;font-weight:600}
+  .filterbtns button.on{background:var(--navy);color:#fff}
+  .badge-legend{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px;font-size:11px;color:var(--muted)}
+
+  .callout{border-radius:12px;padding:11px 14px;margin-bottom:14px;font-size:13px;line-height:1.5}
+  .callout.info{background:var(--blue-light);border:1px solid #CDE7F5;color:var(--blue-dark)}
+  .callout.warn{background:var(--gold-light);border:1px solid var(--gold);color:#7A5A00}
+  .callout.danger{background:#FBE9EA;border:1px solid #F0C2C3;color:#9A2E31}
+
+  .tcard{margin-bottom:14px;overflow:hidden;border-left:4px solid var(--border)}
+  .tcard .pad{padding:14px 16px}
+  .tnum{color:var(--blue);font-weight:600;font-size:14px}
+  .ttitle{font-weight:600;font-size:15px}
+  .tbody{font-size:13.5px;line-height:1.55;color:var(--ink);margin-top:8px}
+  .tbody p{margin:0 0 6px}
+  .tbody p:last-child{margin:0}
+  .tbody strong{color:var(--navy)}
+
+  .tagrow{display:flex;gap:6px;flex-wrap:wrap}
+  .tag{font-size:10.5px;font-weight:600;border-radius:6px;padding:2px 7px;border:1px solid transparent}
+
+  .statusrow{display:flex;gap:9px;margin-top:14px;flex-wrap:wrap}
+  .sbtn{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:9px;font-size:13px;font-weight:600;border:1px solid transparent}
+  textarea.notes{width:100%;margin-top:12px;border:1px solid var(--border);border-radius:9px;padding:9px 11px;font-size:13.5px;line-height:1.5;resize:vertical;color:var(--navy);min-height:46px}
+
+  .dropzone{margin-top:9px;border:1.5px dashed var(--border);border-radius:10px;padding:10px 12px;background:#FBFCFD}
+  .dzhint{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);flex-wrap:wrap}
+  .dzlink{color:var(--blue-dark);font-weight:600;text-decoration:underline;cursor:pointer}
+  .thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .thumb{position:relative}
+  .thumb img{height:82px;border-radius:8px;border:1px solid var(--border);display:block}
+  .thumb button{position:absolute;top:-7px;right:-7px;background:var(--red);color:#fff;border-radius:99px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1}
+
+  /* report */
+  .rep{max-width:920px;margin:0 auto;padding:22px 18px 90px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}
+  .stat{border:1px solid var(--border);border-radius:11px;padding:12px 14px;background:#fff}
+  .stat .v{font-size:26px;font-weight:600}
+  .stat .l{font-size:12px;color:var(--muted);font-weight:500}
+  .actions{display:flex;gap:9px;margin-top:18px;flex-wrap:wrap}
+  .abtn{display:flex;align-items:center;gap:7px;border-radius:9px;padding:9px 13px;font-size:13px;font-weight:600;border:1px solid var(--border);background:#fff;color:var(--navy)}
+  .abtn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .abtn.danger{color:var(--red);border-color:#F0C2C3}
+  .issue{padding:16px;margin-bottom:12px;border-left:4px solid var(--gold)}
+  .ihead{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .ibadge{font-size:11px;font-weight:700;color:#fff;border-radius:6px;padding:2px 8px}
+  .resrow{display:flex;align-items:center;gap:10px;padding:8px 13px;font-size:13px;border-top:1px solid var(--border)}
+  .resrow:first-child{border-top:none}
+  .respill{font-size:11px;font-weight:700;border-radius:6px;padding:2px 8px;min-width:56px;text-align:center}
+
+  /* reference */
+  table.ref{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;font-size:12.5px;margin-bottom:18px}
+  table.ref th{background:#F1F5F8;text-align:left;padding:8px 11px;font-size:12px}
+  table.ref td{padding:8px 11px;border-top:1px solid #EDF1F5;vertical-align:top}
+  .reflist{font-size:13px;line-height:1.6;color:var(--ink)}
+  .reflist li{margin-bottom:4px}
+
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:11px 18px;border-radius:10px;font-size:13.5px;font-weight:500;z-index:60;box-shadow:0 8px 24px rgba(15,43,60,.28)}
+  .storebar{position:fixed;bottom:0;left:0;right:0;padding:8px 14px;font-size:12px;text-align:center;z-index:40}
+  .jumpbtn{width:100%;margin-top:10px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px;font-size:12.5px;font-weight:600;color:var(--blue-dark);display:flex;align-items:center;justify-content:center;gap:6px}
+  .icon{width:15px;height:15px;flex-shrink:0}
+  h3.secref{font-size:14px;margin:18px 0 7px;color:var(--navy)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+/* =========================================================================
+   emPartner CRM QA Capture Tool  (LIVE integrated build)
+   Self-contained. Records Pass / Fail / Partial, notes and screenshots per
+   test, then compiles a triage report. Persists automatically using whatever
+   storage the environment offers.
+   ========================================================================= */
+
+/* ----- adaptive storage: window.storage (Claude) -> localStorage -> memory */
+const Store = (() => {
+  if (typeof window !== 'undefined' && window.storage && window.storage.get) {
+    return {
+      kind:'cloud',
+      async get(k){ try{const r=await window.storage.get(k);return r?r.value:null;}catch{return null;} },
+      async set(k,v){ try{await window.storage.set(k,v);}catch{} },
+      async del(k){ try{await window.storage.delete(k);}catch{} },
+      async list(p){ try{const r=await window.storage.list(p);return r?(r.keys||[]):[];}catch{return [];} }
+    };
+  }
+  try {
+    const t='__qa_probe__'; localStorage.setItem(t,'1'); localStorage.removeItem(t);
+    return {
+      kind:'local',
+      async get(k){ return localStorage.getItem(k); },
+      async set(k,v){ try{localStorage.setItem(k,v);}catch{} },
+      async del(k){ localStorage.removeItem(k); },
+      async list(p){ return Object.keys(localStorage).filter(x=>x.indexOf(p)===0); }
+    };
+  } catch(e){}
+  const m={};
+  return {
+    kind:'memory',
+    async get(k){ return (k in m)?m[k]:null; },
+    async set(k,v){ m[k]=v; },
+    async del(k){ delete m[k]; },
+    async list(p){ return Object.keys(m).filter(x=>x.indexOf(p)===0); }
+  };
+})();
+const K_STATE='qa:state';
+const K_SHOT=id=>'qa:shots:'+id;
+
+/* ----- tags shown as small badges on a test ----- */
+const TAGS = {
+  realEmail:{label:'Sends a real email', bg:'#FBE9EA', col:'#9A2E31', bd:'#F0C2C3'},
+  stub:{label:'Known stub', bg:'#FDF4DA', col:'#7A5A00', bd:'#EFBD19'},
+  backend:{label:'Backend confirm', bg:'#E9F6F6', col:'#0E6E6E', bd:'#9AD9D9'},
+  build:{label:'Build check', bg:'#E6F4FB', col:'#1E8FBC', bd:'#BFE4F5'},
+  livedata:{label:'Live-data tell', bg:'#EDEAF7', col:'#5B4B9E', bd:'#CFC6EC'}
+};
+const STATUS = {
+  pass:{label:'Pass', col:'#0F6E56', bg:'#E6F1ED'},
+  partial:{label:'Partial', col:'#B7860B', bg:'#FDF4DA'},
+  fail:{label:'Fail', col:'#C94246', bg:'#FBE9EA'}
+};
+
+/* =========================== TEST CONTENT =============================== */
+const SECTIONS = [
+{
+  id:'1', title:'Access, board and navigation',
+  callout:{type:'info', text:`Run against Div's integrated CRM at crm.empartner.global, opened from the portal login so you are authenticated. This is a different deployment from the placeholder shell at empartner-crm-shell.vercel.app. Tests 1.6 to 1.12 confirm you are looking at your real backend data and not a fixture. If any of those fail, stop and tell Div: every other result is unreliable until live data is confirmed.`},
+  tests:[
+    {id:'1.1', title:'Load the live CRM', steps:`Open the integrated CRM from the portal link.`, expected:`Loads to the Partner Acquisition pipeline board with eight columns of cards. Top bar shows the emPartner logo and your user. No "to be built" placeholder text on the cards.`},
+    {id:'1.2', title:'Eight columns, correct order', steps:`Scan left to right (scroll sideways if needed).`, expected:`Partners to Source, Prospective, Connect, Discover, Strategy, Activation, Embedded, Not Embedded, each with a count badge.`},
+    {id:'1.3', title:'Top navigation', steps:`Check the menu row: Dashboards, Meeting Frameworks, Email Templates, Assets, Partners, and a notifications bell.`, expected:`All present; each dropdown opens (tested in its own section).`},
+    {id:'1.4', title:'Cards show live data', steps:`Look at a Prospective and a Connect card.`, expected:`Real company and contact names, a fit or relationship indicator and a next-action or meeting line. A cold flag appears on cards with no recent activity; a star on priority partners.`},
+    {id:'1.5', title:'Not Embedded "not a fit" cards hidden by default', steps:`Look at the Not Embedded column.`, expected:`Casual and marketing close-outs show; partners closed as "not a fit" are hidden until you turn on the Unsuitable and archived filter (Section 14).`},
+    {id:'1.6', title:'You are NOT on the placeholder shell', tags:['livedata'], steps:`Look at the board's company names.`, expected:`You see your real partners (or an empty board if none exist yet). You do NOT see the fixed placeholder set: The World's Best Accountant, Global Tech Solutions, Enterprise Systems Inc, CloudBase Partners, Quantum Consulting, Strategic Alliance Co, Synergy Solutions, Premier Business Group, Wright and Co Advisors, NextGen Partners, Bright Marketing, Apex Advisory. If you see those, you are on the placeholder shell, not Div's live build. Switch URLs.`},
+    {id:'1.7', title:'The header shows YOUR identity', tags:['livedata'], steps:`Look at the top-right user name and initials, and open Settings then My Profile.`, expected:`Your real name, email and details. If it shows Lila Kennedy / LK / lila@emple.com.au and that is not you, the live /auth/me call has not returned, so you are not authenticated. It briefly shows this fallback while loading; if it stays, it is a fail.`},
+    {id:'1.8', title:'Board data persists across a refresh', tags:['livedata'], steps:`Note the partners and counts, then refresh the page (F5).`, expected:`The same real partners reload, fetched fresh from the backend. If the board is empty before and after on an account that should have partners, the fetch is failing. Flag it.`},
+    {id:'1.9', title:'Connect / Discover / Present show the REAL partner', tags:['livedata'], steps:`Open a real partner in Connect (and again in Discover and Strategy). Check the partner name in the header and the prep content.`, expected:`The workspace shows that same partner. You do NOT see Priya Nair (Meridian Wealth), David Chen (Pinnacle Law), Sarah Mitchell (Smith Accounting), or James Okafor (Coastal Legal) unless one is genuinely your partner. Those four are the exercise-10 sample partners. A canned solutions list (Retirement income planning, Investment strategy, Estate planning, Risk and insurance, SMSF advice, Debt and lending) is the same tell. Known risk: the Connect/Discover/Present data files are still set to mock-fallback (USE_MOCK_DATA=true).`},
+    {id:'1.10', title:'A manually added partner actually saves', tags:['livedata'], steps:`Add a test partner (Section 10), refresh the page, look for it on the board.`, expected:`It is still there after refresh. Known risk: the Add-Partner flow is wired local-only ("mock until POST /exercise/2/partners is wired"). If your added partner disappears on refresh, it was never saved. That is a real live-data gap to report (note 1.10), not a tester error.`},
+    {id:'1.11', title:'Network check (optional, advanced)', steps:`Open DevTools, Network tab, refresh, filter for partners, auth/me, ecosystem_needs.`, expected:`Real requests returning 200 with partner and user JSON, not 401/403/empty. A 401/403 is an auth problem; an empty or failed response means fallbacks. Note any non-200.`},
+    {id:'1.12', title:'Partner Detail composite is this partner', tags:['livedata'], steps:`Open a real partner's record; expand Relationship details, Partner type, and read the Notes and activity stream.`, expected:`These reflect this partner (their archetype, their history), not a sample like Smith Accounting / Sarah Mitchell. Core fields are live; confirm the relationship, partner-type and activity sections are too. Flag if they look like a fixed sample regardless of which partner you open.`}
+  ]
+},
+{
+  id:'2', title:'Partners to Source (sourcing)',
+  callout:{type:'info', text:`Two modals feed the Prospective column. Discover Partners is open-ended; Known Gap is locked to a role from an Exercise 5 gap card. Both add a brand-new partner to Prospective the moment you click Add, and write to the database immediately. An undo deletes it.`},
+  footnote:`Backend confirm: the create-from-sourcing endpoint and several fields (inbound/outbound answers, method, which-partner, introducer text, value classes, source_ecosystem_id, the partner_contacts row) are open items. If an Add errors on the server, log the test number.`,
+  tests:[
+    {id:'2.1', title:'Open "Discover Partners"', steps:`In the Partners to Source column header, click Discover Partners.`, expected:`A modal with three accordion boxes, one open at a time, Box 1 open first: 1. Clients who already refer you. 2. Clients in complementary professions. 3. People in your networks and groups.`},
+    {id:'2.2', title:'Discover Partners: add-someone fields', steps:`In Box 1, open the add form. Note the fields top to bottom.`, expected:`In order: First name, Last name, Their business; "What is their profession?" dropdown (ends with "+ New Profession", which reveals a free-text input); refer-for solution chips ("What do they refer you for?"); "Could you refer clients to them?" Yes/No (required); "What else could you offer them?" chips (Promotion / Commercial benefits / Exclusive offers for those they refer); Notes. Buttons: Add to Prospective Partners, Cancel.`},
+    {id:'2.3', title:'Box 2/3 inbound question + conditional', steps:`Open Box 2's form.`, expected:`An extra "Have they referred you already?" Yes/No. Choosing No reveals "Could they refer to you?" Yes/No. The solutions-chip label follows the answer ("do" vs "could" refer you).`},
+    {id:'2.4', title:'Required-field gate', steps:`In any box, click Add to Prospective Partners with fields blank.`, expected:`Add is blocked; a yellow banner "Please complete these before adding:" lists the missing fields by name; empty fields get red borders; focus jumps to First name if blank. The banner updates live as you fill fields. Yes/No questions count as missing until a pill is clicked.`},
+    {id:'2.5', title:'"No referral either way" hard block', steps:`In Box 2 answer "Have they referred you already?" No, then "Could they refer to you?" No, and "Could you refer clients to them?" No.`, expected:`A banner: "You've said you can't refer each other. A partnership needs a referral path at least one way. Please review your answers." Add is blocked. Changing any direction answer clears it.`},
+    {id:'2.6', title:'"+ New Profession"', steps:`In the profession dropdown choose "+ New Profession" and type a name.`, expected:`A free-text input appears (autofocused); on Add it creates a custom profession (live: a custom partner-card) and proceeds.`},
+    {id:'2.7', title:'Add a candidate (Discover Partners)', steps:`Fill Box 1 validly (First, Last, Business, Profession, "Could you refer?" Yes), click Add to Prospective Partners.`, expected:`Button shows "Adding...", then the person appears as a row inside the box (name, business and profession, refer-for tags, a relationship badge of Mutual referrals / They refer to you / You refer to them, value chips, notes); the box count increments; footer reads "N partners added to Prospective Partners"; the form clears but stays open. A new Prospective card appears on the board.`},
+    {id:'2.8', title:'Undo an add (delete)', steps:`Click the cross on a just-added row.`, expected:`It hard-deletes that just-created Prospective partner and removes it from the board.`},
+    {id:'2.9', title:'Open "Known Gap"', steps:`In Partners to Source, click a GAP card (for example Estate Planning Lawyer / For Retirement Income).`, expected:`A modal whose header shows the gap's role and context plus a "Source this gap" badge, a target block ("You are looking for someone who can become a {role} partner...") with problem/trigger tags, and four boxes: 1. Clients who are {role}s. 2. {role}s your partners recommend. 3. {role}s in your networks and groups. 4. Search your emPartner MMT network.`},
+    {id:'2.10', title:'Known Gap box-specific fields', steps:`Open Box 1 ("Do they already refer you?" Yes/No; solution chips appear only on Yes). Open Box 2 (extra "Which partner recommended them?" required, plus a chip row of existing partners). Open Box 4 (MMT).`, expected:`Each box's required set matches its purpose; Box 2 requires a "which partner" name; Box 4 uses Title and Company name fields and an introducer field.`},
+    {id:'2.11', title:'Known Gap Box 4 (MMT) guided handoff', tags:['stub'], steps:`In Box 4 read the three numbered steps.`, expected:`Step 1 is an editable, pre-filled search phrase ("Find me a {role} in Australia") with a Copy button and a "Search your MMT network" link (opens LinkedIn in a new tab); Step 2 and 3 instructions; an "Add someone you found" form; and a signpost to the emPartner Chrome Extension. The search link is a generic LinkedIn URL and the extension link is external. Intentional handoffs, not in-app search.`},
+    {id:'2.12', title:'Known Gap add then "find another?" prompt', steps:`Add a valid candidate in any Known Gap box.`, expected:`After the add, an overlay: "You've added {name}. Do you want to find another {role}...?" with "No, I'm done" (closes the modal) and "Yes, find another" (stays). The new partner is linked back to the gap. Discover Partners has no such prompt.`},
+    {id:'2.13', title:'Gap card disappears when sourced', steps:`After adding at least one candidate to a gap, close the modal and refresh the board.`, expected:`The new candidate sits in Prospective. If you undo all of a gap's candidates the gap card reappears.`}
+  ]
+},
+{
+  id:'3', title:'Prospective workspace',
+  callout:{type:'info', text:`Open a Prospective card. One guided flow, no tabs; steps reveal top to bottom. Header shows the partner, a Prospective badge, a Partner Details button and a method chip (Your client / Network contact / Partner recommended / emPartner MMT). There is no "not a fit" option at this stage by design: you cannot judge fit before speaking.`},
+  footnote:`Stub: the meeting-link token may render a literal placeholder until Div wires the Exercise 10 meeting link. Backend confirm: event naming, discover_call_date format, the "Awaiting reply since {date}" next-action, and several source fields render placeholders until wired.`,
+  tests:[
+    {id:'3.1', title:'Header + context', steps:`Open a Prospective partner.`, expected:`Avatar or initials, name, "{company} . {profession}", a Prospective badge, a Partner Details button (opens the record without auto-saving), and where applicable a referral badge (Mutual referrals / They refer to you / You refer to them), an "Already referred you" chip, and an "Introduce via {name}" note.`},
+    {id:'3.2', title:'Step 1: Approach picker', steps:`On a direct prospect, look at Step 1.`, expected:`Two cards: "Reach out for a quick call first" (to Connect) and "Go straight to booking a discovery meeting" (to Discover), one carrying a Recommended badge with a "why" line. Picking one collapses it to a one-line summary with a Change link (locked once a message is sent). Intro-request flows (partner/MMT) show no approach picker, just an "Ask for the introduction" step.`},
+    {id:'3.3', title:'Contact details panel', steps:`On a direct flow, find the Contact details panel.`, expected:`Inline-editable First, Last, Title (optional), Email, Phone, LinkedIn; a "Save changes" button (disabled until you edit); and "Add another contact" (First required). Saving shows a status line.`},
+    {id:'3.4', title:'Step 2: Message + AI enrich', steps:`In the message step, click "Enrich with AI" (relabels to "Re-enrich from notes" after first use).`, expected:`Generates or updates the draft from the partner's notes (no-ops if notes empty). The body is editable; a "To" line shows the recipient.`},
+    {id:'3.5', title:'Per-flow send options', tags:['realEmail'], steps:`Note which buttons appear for your flow.`, expected:`Direct (your client / network): an Email / LinkedIn-SMS toggle. Email gives Send email, Copy, Mark as sent. LinkedIn-SMS gives Copy, Sent on LinkedIn, Sent by SMS. Only this flow really sends a real email. Partner intro request: Copy, Sent on LinkedIn, Sent by email (no real send). MMT intro request: Copy, Mark as sent via emPartner (no real send). After a partner/MMT intro (reply step): Copy, Sent on LinkedIn, Sent as email reply (no To/Subject row, it is a reply into the thread).`},
+    {id:'3.6', title:'Copy-before-mark gate', steps:`Without clicking Copy, try a "Sent.../Mark as sent" button.`, expected:`It is disabled ("Copy the message first"). After clicking Copy it enables.`},
+    {id:'3.7', title:'Channel-capture gate before first send', steps:`On a partner with no email, click Send email (direct flow). On a partner with no email/phone/LinkedIn, click a Mark as sent.`, expected:`An inline prompt appears before sending: for Send email a single email field ("Save and continue"); for Mark-as-sent a three-field prompt (email/phone/LinkedIn, any one suffices). After saving, the prompt closes and you re-click the original button (it does not auto-fire).`},
+    {id:'3.8', title:'Cannot leave Prospective with no contact channel', steps:`Try to advance a partner that has no email, phone or LinkedIn at all.`, expected:`A hard block (browser alert): "Add at least one contact channel ... before moving out of Prospective."`},
+    {id:'3.9', title:'Tracker / awaiting reply', steps:`After marking a message sent, view the next-steps tracker.`, expected:`An "Awaiting reply from {name}" block with an activity log; "Send a follow-up nudge" (opens a pre-filled nudge with Copy/Sent buttons); and, for non-intro flows, a "Move to a call" option (a sanctioned exit when there is no reply).`},
+    {id:'3.10', title:'Responded then routing', steps:`Click "{name} responded". If your approach was call use "Move to Connect". If meeting, enter a meeting date then "Book and move to Discover" (disabled until a date is set).`, expected:`Call routes the partner into Connect; meeting routes into Discover with the date saved. An optional "What did they say?" notes box saves on blur. MMT-sourced contacts with no phone get a phone-capture row here.`},
+    {id:'3.11', title:'Real send (only with a safe test address)', tags:['realEmail'], steps:`On a direct flow with a test email you control, click Send email.`, expected:`A real email is sent (from the emPartner address) and the message is marked sent. Skip this test if you do not have a safe address; use Copy/Mark instead.`}
+  ]
+},
+{
+  id:'4', title:'Connect workspace',
+  callout:{type:'info', text:`Open a Connect card. Three tabs: 1 Partner prep, 2 Call framework, 3 Post-call capture. A "Save as PDF" button prints the call framework. Outcome drives everything downstream and there are exactly three outcomes.`},
+  tests:[
+    {id:'4.1', title:'Tabs present', steps:`Confirm the three numbered tabs and that clicking each switches view.`, expected:`Partner prep / Call framework / Post-call capture. A cross-partner dropdown may appear only if the partner is not locked; from a kanban-card open it should be hidden. Flag if it shows.`},
+    {id:'4.2', title:'Partner prep: focus bar', steps:`On tab 1, use the focus-bar dropdowns: Solution to focus on, Offer to lead with, Key channel or asset, and (one-way partners only) Partner benefits to offer.`, expected:`Each defaults to "Select..." and is selectable. The Partner benefits dropdown only appears for inbound-only (they-refer-to-us) partners.`},
+    {id:'4.3', title:'Partner prep: AI briefing + source data', steps:`Watch the briefing prose load; expand the Source data accordion.`, expected:`Briefing sections "The relationship so far", "The opportunity", (one-way only) "What we bring to this partnership", "Going in", with a "Generating briefing..." spinner first. Source data shows a field grid plus Referral triggers and Typical client problems tags.`},
+    {id:'4.4', title:'Call framework: rail, opening line, tick-to-advance', tags:['build'], steps:`On tab 2, look at the left section rail ("{done} / {total} Sections" with clickable items that each show a tick once done). Edit the Opening line box above the first section. Work a section, then click "Tick and advance" (last section reads "Tick and finish"; clicking a ticked section again reads "Untick").`, expected:`The rail tracks progress; ticking marks the section and moves to the next. The opening line is editable. There is NO "Framework / Coaching notes" toggle and no AI-generate button on this tab; each card shows a SAY/ASK example with a WHY tip, pre-loaded. If you see an old Framework/Coaching toggle, you are on a stale build.`},
+    {id:'4.5', title:'Call framework: SAY/ASK blocks editable', steps:`In a section, edit the SAY ("SAY Example") textarea and the ASK ("ASK Example") textarea (side by side; a section with only one collapses to a single column). Read the WHY tip box (bulb icon).`, expected:`Both SAY and ASK are freely editable; the WHY tip is read-only guidance. Sections are a flat numbered list (no separate read-only Close block; the final section just relabels its button to "Tick and finish"). Edits are in-call only, not persisted.`},
+    {id:'4.6', title:'Post-call: call summary', steps:`On tab 3, set Call date (defaults today). Pick Outcome (required).`, expected:`Outcome options verbatim: "Discovery call booked", "Tried to call, left message", "No next step, not a fit". A Next meeting date picker sits alongside.`},
+    {id:'4.7', title:'Follow-up email card', tags:['realEmail'], steps:`With outcome Discovery call booked (or Tried to call), view the Follow-up email card.`, expected:`Auto-filled To / Subject / Body (varies by new vs existing contact and by outcome), a Send email button (disabled if To/Subject/Body blank), and a cross-Close that hides the card. Send is a real email. If the partner has no email on record, the To field is auto-guessed as first@company.com.au. Flag if so.`},
+    {id:'4.8', title:'Interest levels + notes', steps:`Set the three Interest levels and add notes.`, expected:`"Interest in proactive referrals" and "Interest in marketing together" give High / Medium / Low / Not discussed. "Interest in exclusive offer" gives Positive reaction / Neutral / Not discussed (a different set). A Notes textarea.`},
+    {id:'4.9', title:'Move button enables only with an outcome', steps:`With no outcome chosen, look at the single Next steps button. Then choose Discovery call booked.`, expected:`The button is disabled with a hint until an outcome is set. Its label changes by outcome: "Move to Discover" (discovery booked) / "Save" (tried to call) / "Mark as not a fit" (not a fit).`},
+    {id:'4.10', title:'Soft "email not sent" gate', steps:`With outcome Discovery call booked and the follow-up email not sent, click Move to Discover.`, expected:`A dismissable modal "Before you move to Discover" recommending you send the follow-up, with "Go back" and "Proceed anyway" (cross and backdrop also dismiss). It does not hard-block.`},
+    {id:'4.11', title:'Soft confirm prompts (empty date / interest)', steps:`Move with an empty Next meeting date (discovery booked) and/or empty interest fields.`, expected:`Browser confirm prompts ("Next meeting date is empty. Save and continue anyway?" / "Some interest fields are empty...") that are skippable, not hard blocks.`},
+    {id:'4.12', title:'Not-a-fit sub-modal', steps:`Choose outcome "No next step, not a fit".`, expected:`A Not a Fit sub-modal opens immediately. A required reason dropdown: Poor client fit / Competitive overlap / No interest in partnering / Not responsive / Values misalignment / Other, plus optional notes. "Move to Not Embedded" is disabled until a reason is chosen; Cancel resets the outcome. Confirming moves the partner to Not Embedded (tagged not-a-fit).`},
+    {id:'4.13', title:'Outcome landing stages', steps:`Confirm where each outcome sends the partner.`, expected:`Discovery booked to Discover; Tried to call stays in Connect (next-action becomes "Awaiting response since..."); Not a fit to Not Embedded.`}
+  ]
+},
+{
+  id:'5', title:'Discover workspace',
+  callout:{type:'info', text:`Open a Discover card. Three tabs: 1 Partner prep, 2 Call framework, 3 Post-call capture, plus Save as PDF. The framework here is a 10-section concertina. There are four outcomes.`},
+  tests:[
+    {id:'5.1', title:'Tabs + prep', steps:`Confirm the three tabs. On prep, use the focus bar (Solution / Offer / Key channel / Partner benefits one-way only), the optional transcript paste, and the Source data accordion.`, expected:`As Connect, plus a "Notes from previous Discover call" card if prior notes exist, and "From the connect call" prose.`},
+    {id:'5.2', title:'Call framework: 10 sections, rail + tick-to-advance', tags:['build'], steps:`On tab 2, use the left rail to move through the ten numbered sections (section 1 active by default; counter and ticks as Connect). Edit a SAY statement and an ASK question (side by side). Click "Tick and advance" (last reads "Tick and finish").`, expected:`Ten sections through the same call surface as Connect, each with editable SAY statement(s) and one or more editable ASK questions plus a WHY tip box; ticking advances the rail. Edits local only. There is NO Framework/Coaching toggle; that control was removed in the redesign.`},
+    {id:'5.3', title:'Direction-aware sections 6 and 7', steps:`Compare a two-way partner with a one-way (they-refer-to-us) partner on tab 2.`, expected:`Sections 6 and 7 swap and retitle by direction: one-way shows a "Partner benefits" section (question "Which of these would be most valuable for you and your firm?") and a "Their goals and growth" section; two-way uses the standard order.`},
+    {id:'5.4', title:'Post-call: call summary + outcome', steps:`On tab 3, set Call date, pick Outcome, set Next meeting date.`, expected:`Outcome options verbatim: "Partner presentation booked", "Follow-up call booked", "They will come back to me", "No next step, not a fit".`},
+    {id:'5.5', title:'Strategy-meeting attendees', steps:`View the "Who else should join the Partner Strategy meeting?" card.`, expected:`A primary-attendee line; if other active contacts exist, a multi-select "Additional attendees" (hold Cmd/Ctrl); and a "+ Add contact" button that opens a 6-field add-contact form (First required). Adding saves it live and adds them to attendees.`},
+    {id:'5.6', title:'Five fit ratings', steps:`Set each of the five star (1 to 5) ratings.`, expected:`Labels in order: Trust in outcomes and delivery / Client communication and experience / Speed of delivery / Commercial alignment / Value for money. Each is 5 clickable stars (0 = unrated).`},
+    {id:'5.7', title:'Update-partner-record selects', steps:`Set the three selects.`, expected:`Verbatim options: Client fit (confirmed) gives Strong fit / Good fit / Unsure / Poor fit. Competitive overlap gives No overlap / Minor grey areas, agreed / Some overlap, needs discussion / Significant overlap. Referral relationship type gives Mutual / They to us / Us to them / Marketing only.`},
+    {id:'5.8', title:'Marketing channels + sub-fields', steps:`Toggle the channel pills.`, expected:`Pills: Email database, LinkedIn, Podcast, Webinar, YouTube, Events, Other. Email database reveals a size select; LinkedIn reveals a reach select; Other reveals a describe input.`},
+    {id:'5.9', title:'"What we could do together" + notes + email', tags:['realEmail'], steps:`Fill the collaboration ideas textarea and notes. For a booked outcome, use the email card (pick a solution, then "Build email", then To/Subject/Body, then Send email).`, expected:`Both textareas save. The email card appears only for the three non-not-fit outcomes; the body builds after "Build email" (immediate for "they will come back"). Send is real. Guessed-email fallback applies if no address. Flag.`},
+    {id:'5.10', title:'Move gate STATE 1 (disabled)', steps:`With no outcome, look at "Move to Partner Strategy". Pick "Partner presentation booked" but leave Next meeting date blank.`, expected:`Disabled with hint "Select an outcome..."; after choosing an outcome that needs a date (Partner presentation booked or Follow-up call booked) it stays disabled with "Enter a next meeting date to continue." until a date is set. (They will come back / Not a fit need no date.)`},
+    {id:'5.11', title:'Move gate STATE 2 (soft warnings)', steps:`With Partner presentation booked, a date set, but the email not sent AND fit/record fields blank, click Move to Partner Strategy.`, expected:`A single "Before you save" modal listing soft warnings: (A) follow-up email not sent, and (B) for presentation-booked only, key capture fields blank (all five fit ratings unrated AND all three selects empty). "Go back" / "Continue anyway". Sending the email or setting any fit/select clears the matching warning.`},
+    {id:'5.12', title:'Not-a-fit sub-modal', steps:`Choose "No next step, not a fit" and proceed.`, expected:`A sub-modal with required reason (same six: Poor client fit / Competitive overlap / No interest in partnering / Not responsive / Values misalignment / Other) plus optional notes; "Move to Not Embedded" disabled until a reason is chosen.`},
+    {id:'5.13', title:'Outcome landing stages', steps:`Confirm landings.`, expected:`Presentation booked to Strategy; Follow-up call booked stays Discover; They will come back stays Discover (no next-meeting date kept); Not a fit to Not Embedded.`}
+  ]
+},
+{
+  id:'6', title:'Strategy workspace (Partner Strategy / Present)',
+  callout:{type:'warn', text:`Open a Strategy card. Three tabs: 1 Prepare, 2 Present, 3 Post-meeting. This is the slide-deck builder, MOU and post-meeting capture. Four outcomes. Only the generated-MOU path is built; "own document" and "external signing" agreement paths are deferred and not in the live build.`},
+  footnote:`Not built: own-document and external-signing paths; review-window fields (only a display-only "+60 days" date in the MOU prose). Backend confirm: MOU token/approval/portal provisioning; several present_* fields; the advance fires on the client send resolving, not a server-verified dispatch.`,
+  tests:[
+    {id:'6.1', title:'Prepare tab', steps:`On tab 1, review the objectives list, read-only attendees, optional transcript paste, partner logo upload, "Slides to include" checkboxes (12 slides), Referral direction pills (Both ways / us to them / them to us), and three pickers: Solutions to feature (max 4), Exclusive offers, Promotional channels.`, expected:`All present and editable; checkboxes toggle slides; direction pills override the deck's direction.`},
+    {id:'6.2', title:'Launch the presentation', steps:`Click "Launch presentation".`, expected:`Saves the prep, generates AI content for several slides, then opens the slide deck (full-screen, above the workspace). First open may show generation.`},
+    {id:'6.3', title:'Slide deck navigation + editing', steps:`In the deck use prev/next, the dot nav and counter; toggle Edit / Save and close; edit some text; Exit.`, expected:`12 slides (display order intentionally puts Balancing before Commercial; slide 3 "Previous conversation" is auto-removed for brand-new partners). In Edit mode text is editable inline and persists; navigation saves edits.`},
+    {id:'6.4', title:'Key editable slides', steps:`Spot-check: S2 opportunity cards; S5 "How we help" (solution cards + "When can you refer us? Triggers" + "At what point in your process?"); S6 exclusive offers (+ partner's intro offer); S7 promotional opportunities; S9 commercial projections (direction-gated); S10 Balancing (method + inputs); S11 next-steps action plan.`, expected:`Each edits inline; S5/S6/S7/S9 fields mirror the post-meeting fields (shared state).`},
+    {id:'6.5', title:'Download deck as PDF', tags:['stub'], steps:`Use the deck's print/PDF.`, expected:`Opens the browser print dialog (choose Save as PDF). Not a server-rendered PDF.`},
+    {id:'6.6', title:'Post-meeting: outcome', steps:`On tab 3, set Date, pick Outcome.`, expected:`Verbatim: "Proceeding, Send MOU", "Very Interested, Follow Up Booked", "Casual Referrer Only", "Not a Fit".`},
+    {id:'6.7', title:'Post-meeting capture fields', steps:`Review the capture fields.`, expected:`A read-only commercial-projections summary; promotional fields (their channels / what they offer us / what we do for them / joint ideas + first marketing actions through our and their channels); exclusive-offer fields (our offers / their offer / referral triggers / at what point in their process); a dynamic action plan list (add/remove, seeded with rows); and the Generate MOU form (Company / ABN required / Representative / Title required).`},
+    {id:'6.8', title:'Generate MOU', steps:`Fill ABN and Title (Company/Rep optional), click Generate MOU.`, expected:`Button gated until ABN and Title are filled. Generating builds a snapshot, produces an MOU link (.../mou/{token}) and opens the MOU document.`},
+    {id:'6.9', title:'MOU document', steps:`Review the MOU: parties (both ABNs/reps), s1 client-experience commitment, s2 commercial projections (direction-gated), s3 balancing, s4 exclusive offers, s5 promoting one another, s6 action plan (60-day review date), general terms, signatures, non-binding fine print. Toggle Edit / Done editing; Download PDF.`, expected:`Operator can edit; "Done editing" freezes a snapshot (post-edit it renders the frozen version); Download PDF opens print.`},
+    {id:'6.10', title:'Move-to-Activation gate (the firm one)', tags:['realEmail'], steps:`With outcome "Proceeding, Send MOU", try clicking Save post meeting directly. Then instead: Generate MOU, "Send email with MOU", Send email.`, expected:`Saving directly with Proceeding shows an error telling you to send the MOU email: the partner advances to Activation only when the MOU email is actually sent, not on a bare click. The Send button is disabled unless an MOU link exists and the outcome is Proceeding. After a successful send the partner moves to Activation (next action "Sign MOU", MOU pending), and the Send button becomes "Revise and resend". The MOU email is real.`},
+    {id:'6.11', title:'MOU revise/resend', steps:`After sending, click "Revise and resend", change the MOU, resend.`, expected:`Re-opens the draft and lets you send again while still pending.`},
+    {id:'6.12', title:'Partner approval (read view)', tags:['stub'], steps:`If you can open the partner-side MOU link, use "Approve this agreement".`, expected:`Records approval (name + time), flips MOU to active. Portal provisioning and notification are a server-side TODO; local state is optimistic.`},
+    {id:'6.13', title:'Very Interested needs a next-meeting date', steps:`Pick "Very Interested, Follow Up Booked" with no next-meeting date, try to save.`, expected:`Save is blocked or disabled until a next meeting date is set. Saving keeps the partner in Strategy and offers a follow-up email draft.`},
+    {id:'6.14', title:'Casual + Not-a-Fit outcomes', steps:`Pick "Casual Referrer Only" and save. Separately pick "Not a Fit".`, expected:`Casual moves to Not Embedded (casual), stamps a close date, offers a follow-up email. Not a Fit opens the reason sub-modal (same six reasons), then moves to Not Embedded (not-a-fit). Both force the next-meeting date to clear.`}
+  ]
+},
+{
+  id:'7', title:'Activation workspace',
+  callout:{type:'info', text:`Open an Activation card. An accordion of five sections (one open at a time; Action Plan open by default), plus a standalone review-date row. The workspace recommends a review outcome (Embed / Extend / Casual) and sending the matching email performs the move.`},
+  footnote:`Stub: portal milestone rows (PRM_PORTAL_LIVE=false). Backend confirm: new fields casual_reason, partnership-results table, review_meeting_at; move-to-Embedded uses a dedicated endpoint gated on email dispatch.`,
+  tests:[
+    {id:'7.1', title:'Partner Activity Record (read-only)', tags:['stub'], steps:`Open the Partner Activity Record section.`, expected:`A milestones table ("dates record automatically"): MOU sent (from record), MOU signed (shows when active, else "Awaiting"), and Partner entered the portal / Partner uploaded resources, both stubbed ("Available with Portal").`},
+    {id:'7.2', title:'Action Plan', steps:`In Action Plan, edit a Scheduled date and a Completed date on a row.`, expected:`One row per action carried from the MOU (read-only text, "From MOU" badge). Scheduled allows future dates; Completed cannot be in the future (max = today). No add/remove here (locked at MOU generation). Changes auto-save.`},
+    {id:'7.3', title:'Partnership review date', steps:`Edit the standalone Partnership review date.`, expected:`A single date input ("Set at the Strategy meeting, editable here"); auto-saves; mirrored inside Next Steps.`},
+    {id:'7.4', title:'Partnership Results: add cards', steps:`In Partnership Results, use Add to add each type once: Marketing activity / Referral to {partner} / Referral from {partner} / Joint client.`, expected:`One card per type (cannot add a second of the same). Each ends with an overall rating: Excellent / Good / Mixed / Poor.`},
+    {id:'7.5', title:'Result type fields', steps:`Check each card's fields.`, expected:`Marketing gives status (Completed / Scheduled / Pending / Cancelled) plus expectations/outcomes/benefits text; picking Cancelled forces rating Poor and disables Good/Excellent. Referral to/from gives fit + experience chips + story notes. Joint client gives an introducer dropdown (Us / partner) + result + working-together chips + story notes.`},
+    {id:'7.6', title:'Review engine recommendation', steps:`Add results with varying ratings and read Next Steps.`, expected:`A recommendation derived live: 0 rated to Extend; 2+ poor, or 1 poor with 0 good, to Casual; 2+ good with 0 poor to Embed; otherwise Extend. "consider another path" reveals the other two.`},
+    {id:'7.7', title:'Embed tail then move to Embedded', tags:['realEmail'], steps:`Choose Embed, review the editable confirmation email, click Copy then Mark as sent (or Send confirmation with a safe address).`, expected:`Mark as sent is disabled until Copy is clicked. Completing it moves the partner to Embedded (stamps embedded date) and auto-closes. A valid primary-contact email is required (error if missing).`},
+    {id:'7.8', title:'Extend tail (stays in Activation)', steps:`Choose Extend, pick a reason template (Referrals still maturing / Marketing done, referrals to follow / More time to bed in), Copy, Mark as sent.`, expected:`Body carries an "{Offer dates here}" placeholder (it proposes, does not announce). Send/Copy disabled if the message is empty; Mark-as-sent gated on Copy. The partner stays in Activation; the review date is not auto-moved.`},
+    {id:'7.9', title:'Casual tail then Not Embedded', steps:`Choose Casual, pick one of the four reasons: Marketing worked, referrals didn't / Couldn't get organised, revisit later / Good relationship, not the right referral fit / Quieter than hoped, keep it light. Copy, Mark as sent.`, expected:`All buttons disabled until a reason is picked; Mark-as-sent also gated on Copy. Moves the partner to Not Embedded (writes a casual reason + close date; optional notes save as close-out lessons).`}
+  ]
+},
+{
+  id:'8', title:'Embedded workspace',
+  callout:{type:'info', text:`Open an Embedded card. Mostly a read-only recap plus Partner Management hand-off, with one write (End partnership).`},
+  tests:[
+    {id:'8.1', title:'Recap (read-only)', steps:`Review the embedded-since line, the agreement block ("Partnership MOU signed", approver + date), and "How the partnership performed" (the same results captured in Activation, with rating pills).`, expected:`All read-only; performance rows show a one-line summary plus colour-coded rating; empty-state if none.`},
+    {id:'8.2', title:'View agreement', tags:['stub'], steps:`Click "View agreement".`, expected:`A "coming soon (MOU partner/read view)" message. Intentional stub.`},
+    {id:'8.3', title:'Open in Partner Management', tags:['stub'], steps:`Click "Open in Partner Management".`, expected:`A placeholder message ("placeholder until PRM is live") listing future PRM features. The Partner Portal is Phase 3, not built.`},
+    {id:'8.4', title:'End partnership (the one write)', steps:`Click "End partnership / Move out of Embedded". Pick a reason (Relationship ended / Partner left or closed / Went quiet / Mutual wind-down / No longer active / Other (add a note)); add a note. Move to Not Embedded.`, expected:`Confirm is disabled until a reason is picked; if Other, a note is required. Confirming moves the partner to Not Embedded (records the exit reason; keeps the embedded date). There is no "move back to Activation".`}
+  ]
+},
+{
+  id:'9', title:'Not Embedded workspace',
+  callout:{type:'info', text:`Open a Not Embedded card. A close-out recap plus Revive (the only write). Backward moves and closes collect nothing extra; Revive is the action.`},
+  tests:[
+    {id:'9.1', title:'Close-out recap', steps:`Open a Not Embedded partner.`, expected:`A recap line whose wording reflects why they are here: an embedded-exit reason, an Activation casual reason, or a not-a-fit/casual/marketing tag, plus a "Note from close-out" block if lessons were recorded.`},
+    {id:'9.2', title:'Revive form (when allowed)', steps:`If the partner allows revive, review the form: Restart at (Discover / Strategy / Activation only), Reason for reviving (Circumstances changed / New opportunity / They reached out / Capacity now / Other), a reason note (required for Other), and Activity since closing (referrals received / given / marketing, number inputs + free text).`, expected:`All present; Restart at offers only those three stages (not Connect/Embedded).`},
+    {id:'9.3', title:'Revive gate', steps:`Try Revive partner with no stage or no reason.`, expected:`Disabled until a restart stage AND a reason are chosen (and a note if Other).`},
+    {id:'9.4', title:'Revive moves the partner', steps:`Complete a valid revive.`, expected:`Moves the partner to the chosen stage; the column entry clears; closing/MOU/review fields are reset while history (MOU details, lessons, not-a-fit history, events) is preserved.`},
+    {id:'9.5', title:'Not-revivable partners', steps:`Open a partner marked not revivable.`, expected:`The revive form is hidden, with a message that they cannot be brought back.`}
+  ]
+},
+{
+  id:'10', title:'Adding a partner manually',
+  tests:[
+    {id:'10.1', title:'Open + required fields', steps:`Click "+ Add Potential Partners". Observe the required-field gate.`, expected:`Modal "Add a partner": Company, Profession (search/pick, with create-new), contact fields, and "Have you met..." (Active relationship / Lapsed relationship / Some contact / Not met yet). Save disabled until company, profession, first name, last name, email and relationship status are set; a footer lists "Still needed:".`},
+    {id:'10.2', title:'Landing stage', steps:`Save a "Not met yet" partner, then an "Active relationship" partner.`, expected:`Not met / some contact to Prospective; active / lapsed to Connect.`},
+    {id:'10.3', title:'Optional enrichment (light vs heavy)', steps:`After saving, click Add details for a "Not met" and an "Active" partner.`, expected:`"Not met/some contact" shows a shorter set; "Active/lapsed" shows the fuller battery (formalisation, meeting frequency, client fit, referral relationship, opportunity, growth). Save details closes with a confirmation.`},
+    {id:'10.4', title:'Cancel behaviour', steps:`Open Add Partner, click outside the modal, then the cross.`, expected:`Clicking outside does not close it (multi-step). Cross/Cancel closes. A partner saved at step 1 stays saved even if you cancel step 2.`}
+  ]
+},
+{
+  id:'11', title:'Partner record (Partner Detail)',
+  callout:{type:'info', text:`Reach it via a workspace's Partner Details button, the Partners table, or a dashboard row.`},
+  tests:[
+    {id:'11.1', title:'Layout + accordions', steps:`Open a record.`, expected:`Header (name, company, sector, status/fit/priority pills); left side has Core details / Contacts / Relationship details / Partner type accordions (Core + Contacts open by default); right side has a Stage card + Notes and activity stream.`},
+    {id:'11.2', title:'Core details + legal specialisations', steps:`Edit a Core field (blur to save). Add/remove a Legal specialisations chip (type + Enter).`, expected:`"Saved" feedback; chips add/remove.`},
+    {id:'11.3', title:'Contacts CRUD', steps:`+ Add contact (First required), then Edit / Make primary / Remove on a non-primary contact.`, expected:`Add validates First name; Make primary moves the Primary tag; Remove hides it. Primary cannot be removed/demoted via those links.`},
+    {id:'11.4', title:'Relationship / Partner-type (read-only + embed)', tags:['stub'], steps:`Expand each and click Edit relationship details / Edit archetype.`, expected:`Read-only fields; the Edit buttons open an explanatory pop-up about the Exercise 2 / Exercise 4 editors embedding later (deep-link placeholder until exercises are rebuilt in React).`},
+    {id:'11.5', title:'Stage card move + gates', steps:`Use the Stage dropdown and Move.`, expected:`Moving with no change warns "already in {stage}"; backward moves confirm only; forward moves into a later stage ask for the missing facts; moving into Activation asks for start/review dates + agreed actions (required) with MOU recommended; Not Embedded asks for the outcome (Casual / Marketing / Not a fit), with an optional reason when not-a-fit (only the outcome tag is required; leaving the reason blank is allowed and should not block the move).`},
+    {id:'11.6', title:'Notes & activity', steps:`Add a note; read the stream.`, expected:`Note posts; the stream lists dated events (including the stage moves and workspace outcomes captured above).`}
+  ]
+},
+{
+  id:'12', title:'Email Templates library',
+  callout:{type:'info', text:`Menu Email Templates then All templates. Library plus editor; the live send happens inside the workspaces above.`},
+  tests:[
+    {id:'12.1', title:'Library + stage filter', steps:`Open the library; click through the pipeline stages in the sidebar.`, expected:`Title "Email Templates", a stage sidebar with counts, template cards per stage, and an "Edit sign-off and signature" button.`},
+    {id:'12.2', title:'Prospective endings', steps:`On Prospective, expand "Prospective endings".`, expected:`Three endings: Call (recommended) / Call (no number) / Meeting, each editable.`},
+    {id:'12.3', title:'Editor', steps:`Open a template; insert a merge field; add/link an asset; toggle the closing-ask preview; type a [manual fill-in]; Save; Reset to default.`, expected:`Merge fields insert and resolve in preview; the "+ Add file" button opens an asset popover offering Insert link / Attach file (generated = link only); closing-ask toggle changes the preview ending; bracketed fill-ins are highlighted; Save confirms; Reset (with confirm) restores defaults.`},
+    {id:'12.4', title:'Sign-off + signature', steps:`Edit sign-off/signature; Save.`, expected:`Company fills the {our_company} token; sign-off and signature save.`},
+    {id:'12.5', title:'No create/delete', steps:`Confirm there is no "new template" or "delete".`, expected:`Edit and reset only, by design.`}
+  ]
+},
+{
+  id:'13', title:'Acquisition Dashboard',
+  callout:{type:'info', text:`Menu Dashboards then Partner Acquisition.`},
+  tests:[
+    {id:'13.1', title:'Loads + hero', steps:`Open it; click the info icon by the hero verdict.`, expected:`Title, "active since" line, activation-health hero (on track / slipping), metric strip, funnel + activity chart, attention list; the info icon expands an On-track vs Slipping explainer.`},
+    {id:'13.2', title:'Metrics, funnel, chart', steps:`Read the tiles (Embedded / Casual and marketing / In pipeline / Gaps filled), the stage funnel and the months chart.`, expected:`Whole, sensible numbers; bars render cleanly.`},
+    {id:'13.3', title:'Attention rows route correctly', steps:`Click a Needs managing / On track row, then a Going quiet row.`, expected:`Needs-managing/On-track open that partner's current-stage workspace; Going-quiet opens the Partner record.`}
+  ]
+},
+{
+  id:'14', title:'Filters, search and Partners table',
+  tests:[
+    {id:'14.1', title:'Search', steps:`Search a company name on the board.`, expected:`Narrows to matches (company / contact / email); clearing restores.`},
+    {id:'14.2', title:'Filters popover', steps:`Open Filters; try Profession, Fit (High/Medium/Low) and the Status toggles (MOU pending / Meeting this week / Priority-starred / Recently added / Stale, no activity 30+ days / Unsuitable and archived).`, expected:`Each narrows the board; an active count and removable chips appear; "Clear all" resets.`},
+    {id:'14.3', title:'Unsuitable & archived isolates', steps:`Toggle Unsuitable and archived.`, expected:`Shows only the hidden "not a fit" cards; toggling off hides them again.`},
+    {id:'14.4', title:'My Deals vs All Deals', steps:`Switch tabs.`, expected:`My Deals shows only your partners; gaps stay visible in both.`},
+    {id:'14.5', title:'Partners table', tags:['stub'], steps:`Menu Partners then Partners Table; sort a column; open a row; try Import and Export.`, expected:`Sortable table; row opens the record; a Stage filter is available here. Import/Export may be mock/prototype. Confirm whether they are wired in the live build (log if they only toast).`}
+  ]
+},
+{
+  id:'15', title:'Notifications, Settings, Avatar',
+  tests:[
+    {id:'15.1', title:'Notifications bell', steps:`Open the bell; click a notification; Mark all as read.`, expected:`A list with unread badges; clicking a row opens that partner's workspace; mark-all clears the badges.`},
+    {id:'15.2', title:'Settings', tags:['stub'], steps:`Avatar then Settings; edit/save on Company Profile, Branding (logo/colour/font), My Profile (incl. meeting link).`, expected:`Edit/save per card; logo and profile-image uploads may be stubs (log).`},
+    {id:'15.3', title:'Avatar menu', steps:`Open the avatar menu (Admin Portal / Settings / Sign Out).`, expected:`Items present; Admin Portal shows only for admins; confirm whether Sign Out / Admin Portal are wired in the live build.`}
+  ]
+},
+{
+  id:'16', title:'Save as PDF / records',
+  tests:[
+    {id:'16.1', title:'Browser Save-as-PDF', tags:['stub'], steps:`On a workspace or record, use Ctrl/Cmd+P then Save as PDF.`, expected:`A usable PDF; note any screen that prints badly. In-workspace "Save as PDF" and the deck PDF open the print dialog rather than a server PDF.`}
+  ]
+}
+];
+
+/* =========================== APPENDICES (reference) =================== */
+const APPENDICES = [
+  {id:'A', title:'Known not-built / stubs (do not report as broken)', kind:'table',
+   head:['Where','Item','Expected stub'],
+   rows:[
+     ['Strategy/Present','"Own document" and "External signing" agreement paths','Present generate flow is Generate-MOU only. Draft templates exist in the library, but no in-workspace own-document or e-signing send path is built.'],
+     ['Strategy/Present','Review-window fields','Not wired; only a display-only +60-day date in MOU prose.'],
+     ['Present / Activation / Embedded','PDF / deck PDF','Browser print dialog, not a server PDF.'],
+     ['Activation','Portal milestone rows (entered portal / uploaded resources)','"Available with Portal".'],
+     ['Embedded','"Open in Partner Management"','Placeholder; PRM is Phase 3.'],
+     ['Embedded','"View agreement"','"Coming soon (MOU read view)".'],
+     ['Partner record','Edit relationship details / Edit archetype','Explanatory pop-up (Exercise 2 / 4 embed later).'],
+     ['Sourcing (MMT)','"Search your MMT network" / Chrome extension','External links, not in-app search.'],
+     ['Prospective','Meeting-link token','May render a literal placeholder until wired.'],
+     ['Settings','Logo / profile-image upload','May toast only; confirm.'],
+     ['Partners table','Import / Export','May be mock; confirm whether wired in the live build.']
+   ]},
+  {id:'B', title:'Backend-confirm items (log the test number on a server error)', kind:'list',
+   items:[
+     'Sourcing: create-from-sourcing endpoint; fields (inbound/outbound answers, method, which-partner, introducer text, value classes, source_ecosystem_id); the partner_contacts create.',
+     'Prospective: event naming; discover_call_date format; "Awaiting reply since {date}" next-action; source columns; the AI-enrich server wrapper.',
+     'Connect / Discover: post-call save fields; partner-events; guessed first@company.com.au recipient when no email on record.',
+     'Strategy/Present: MOU token / approval / portal provisioning; present_* capture fields; whether the Activation advance is verified by real dispatch (currently fires on the client send resolving).',
+     'Activation: casual_reason enum; partnership-results table; review_meeting_at; the dedicated move-to-Embedded endpoint (email-first, no partial state on failure).',
+     'Embedded / Not Embedded: embedded_exit_reason enum; revive fields plus which fields the server clears vs preserves on revive.'
+   ]},
+  {id:'C', title:'Cross-cutting checks (a quick pass on every workspace)', kind:'list',
+   items:[
+     'Live data (see 1.6 to 1.12): before trusting a screen, confirm it is your real data, not a fixture. On every workspace, sanity-check the partner name in the header matches the card you clicked.',
+     'Auth: an action that errors "Missing auth token" means you are not signed in via the portal.',
+     'Real email: every Send that is not Copy/Mark sends a real email. Use safe addresses.',
+     'Persistence: because it is live, moves and edits stick. Verify the card lands in the new column after a move, and clean up test partners.',
+     'Activity stream: after any stage move or outcome, the partner record Notes and activity should log a matching event.',
+     'Native dialogs: some gates use the browser confirm/alert rather than styled modals (Connect empty-date/interest, email errors). Expected, just note it.'
+   ]},
+  {id:'D', title:'Live vs fixture: name watchlist', kind:'list',
+   items:[
+     'Connect/Discover/Present sample partners: Priya Nair (Meridian Wealth), David Chen (Pinnacle Law), Sarah Mitchell (Smith Accounting), James Okafor (Coastal Legal). Seeing these on a real partner means prototype data is leaking.',
+     'Sample solutions list: Retirement income planning, Investment strategy, Estate planning, Risk and insurance, SMSF advice, Debt and lending.',
+     'Fallback user: Lila Kennedy / LK / lila@emple.com.au.',
+     'Placeholder-shell board (wrong-URL tell): The World\u2019s Best Accountant, Global Tech Solutions, Enterprise Systems Inc, CloudBase Partners, Quantum Consulting, Strategic Alliance Co, Synergy Solutions, Premier Business Group, Wright and Co Advisors, NextGen Partners, Bright Marketing, Apex Advisory.'
+   ]}
+];
+
+const ALL_TESTS = SECTIONS.flatMap(s => s.tests.map(t => ({...t, sectionId:s.id, sectionTitle:s.title})));
+const TOTAL = ALL_TESTS.length;
+const REPORT_EMAIL = 'talila@emple.com.au';
+
+/* =========================== STATE ===================================== */
+const state = {
+  meta:{tester:'', date:new Date().toISOString().slice(0,10)},
+  results:{},   // id -> {status, notes}
+  shots:{},     // id -> [dataURL]
+  view:'tests',
+  activeSection:'1',
+  filter:'all',
+  loaded:false
+};
+let saveTimer=null;
+function scheduleSave(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>Store.set(K_STATE, JSON.stringify({meta:state.meta, results:state.results})), 600);
+}
+
+/* =========================== HELPERS ==================================== */
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function el(html){const d=document.createElement('div');d.innerHTML=html.trim();return d.firstElementChild;}
+function counts(){
+  let pass=0,fail=0,partial=0;
+  for(const t of ALL_TESTS){const s=state.results[t.id]&&state.results[t.id].status;if(s==='pass')pass++;else if(s==='fail')fail++;else if(s==='partial')partial++;}
+  const done=pass+fail+partial;
+  return {pass,fail,partial,done,untested:TOTAL-done};
+}
+function sectionProgress(sec){
+  const ids=sec.tests.map(t=>t.id);
+  const done=ids.filter(id=>state.results[id]&&state.results[id].status).length;
+  const issues=ids.filter(id=>{const s=state.results[id]&&state.results[id].status;return s==='fail'||s==='partial';}).length;
+  return {done,total:ids.length,issues};
+}
+function slug(){return (state.meta.tester||'tester').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'tester';}
+function toast(msg){
+  let t=document.querySelector('.toast'); if(t)t.remove();
+  t=el('<div class="toast">'+esc(msg)+'</div>'); document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2200);
+}
+function downloadBlob(name,content,type){
+  try{
+    const b=new Blob([content],{type}); const u=URL.createObjectURL(b);
+    const a=document.createElement('a'); a.href=u; a.download=name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(u),4000); return true;
+  }catch(e){return false;}
+}
+function compressImage(file){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=()=>{
+      const img=new Image();
+      img.onload=()=>{
+        const maxW=1400, scale=Math.min(1,maxW/img.width);
+        const w=Math.max(1,Math.round(img.width*scale)), h=Math.max(1,Math.round(img.height*scale));
+        const c=document.createElement('canvas'); c.width=w; c.height=h;
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        try{resolve(c.toDataURL('image/jpeg',0.72));}catch(e){resolve(r.result);}
+      };
+      img.onerror=reject; img.src=r.result;
+    };
+    r.onerror=reject; r.readAsDataURL(file);
+  });
+}
+
+/* SVG icons (inline, no dependency) */
+const I={
+  clip:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 4H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/></svg>',
+  check:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  x:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  warn:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  cam:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
+  down:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+  copy:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+  up:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+  reset:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>',
+  file:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+  jump:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><polyline points="19 12 12 19 5 12"/></svg>'
+};
+
+/* =========================== RENDER: shell ============================= */
+function render(){
+  const c=counts();
+  const root=document.getElementById('root');
+  root.innerHTML='';
+  root.appendChild(topBar(c));
+  const body=document.createElement('div'); body.id='body'; root.appendChild(body);
+  renderBody();
+  renderStoreBar();
+}
+function topBar(c){
+  const bar=el(`
+  <div class="topbar">
+    <div class="toprow">
+      <div class="brand">${I.clip}<span>emPartner&trade; CRM QA</span></div>
+      <span class="sub">LIVE build test capture</span>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <input class="tb-input" id="testerInput" placeholder="Your name" style="width:130px" value="${esc(state.meta.tester)}">
+        <input class="tb-input" id="dateInput" type="date" value="${esc(state.meta.date)}">
+        <div class="viewbtns" id="viewBtns">
+          <button data-v="tests" class="${state.view==='tests'?'on':''}">Tests</button>
+          <button data-v="report" class="${state.view==='report'?'on':''}">Report</button>
+          <button data-v="reference" class="${state.view==='reference'?'on':''}">Reference</button>
+        </div>
+      </div>
+    </div>
+    <div class="progwrap">
+      <div class="progbar" id="progbar">
+        <i style="width:${c.pass/TOTAL*100}%;background:var(--green)"></i>
+        <i style="width:${c.partial/TOTAL*100}%;background:var(--gold)"></i>
+        <i style="width:${c.fail/TOTAL*100}%;background:var(--red)"></i>
+      </div>
+      <span class="num sub" style="white-space:nowrap" id="progCount">${c.done}/${TOTAL} done</span>
+    </div>
+    <div class="legend" id="legend">
+      <span><i class="ldot" style="background:var(--green)"></i>${c.pass} pass</span>
+      <span><i class="ldot" style="background:var(--gold)"></i>${c.partial} partial</span>
+      <span><i class="ldot" style="background:var(--red)"></i>${c.fail} fail</span>
+      <span><i class="ldot" style="background:#4B6577"></i>${c.untested} to do</span>
+    </div>
+  </div>`);
+  bar.querySelector('#testerInput').addEventListener('input',e=>{state.meta.tester=e.target.value;scheduleSave();});
+  bar.querySelector('#dateInput').addEventListener('input',e=>{state.meta.date=e.target.value;scheduleSave();});
+  bar.querySelector('#viewBtns').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.view=b.dataset.v;render();window.scrollTo({top:0});});
+  return bar;
+}
+function refreshProgress(){
+  const c=counts();
+  const pb=document.getElementById('progbar');
+  if(pb)pb.innerHTML=`<i style="width:${c.pass/TOTAL*100}%;background:var(--green)"></i><i style="width:${c.partial/TOTAL*100}%;background:var(--gold)"></i><i style="width:${c.fail/TOTAL*100}%;background:var(--red)"></i>`;
+  const pc=document.getElementById('progCount'); if(pc)pc.textContent=`${c.done}/${TOTAL} done`;
+  const lg=document.getElementById('legend');
+  if(lg)lg.innerHTML=`<span><i class="ldot" style="background:var(--green)"></i>${c.pass} pass</span><span><i class="ldot" style="background:var(--gold)"></i>${c.partial} partial</span><span><i class="ldot" style="background:var(--red)"></i>${c.fail} fail</span><span><i class="ldot" style="background:#4B6577"></i>${c.untested} to do</span>`;
+  const side=document.getElementById('sidecard'); if(side)side.replaceWith(buildSidebar());
+}
+function renderBody(){
+  const body=document.getElementById('body');
+  body.innerHTML='';
+  if(state.view==='tests')body.appendChild(testsView());
+  else if(state.view==='report')body.appendChild(reportView());
+  else body.appendChild(referenceView());
+}
+
+/* =========================== RENDER: tests ============================= */
+function buildSidebar(){
+  const aside=document.createElement('aside');
+  const card=document.createElement('div'); card.className='card sidecard'; card.id='sidecard';
+  SECTIONS.forEach(s=>{
+    const p=sectionProgress(s);
+    const complete=p.done===p.total;
+    const bg=complete?'var(--green)':p.issues?'var(--red)':p.done?'var(--gold)':'#EDF1F5';
+    const fg=(complete||p.issues)?'#fff':'var(--navy)';
+    const btn=el(`<button class="secnode ${s.id===state.activeSection?'on':''}">
+      <span class="secbadge num" style="background:${bg};color:${fg}">${complete?'&#10003;':s.id}</span>
+      <span class="sectext" style="font-weight:${s.id===state.activeSection?600:500}">${esc(s.title)}</span>
+      <span class="secct num">${p.done}/${p.total}</span>
+    </button>`);
+    btn.addEventListener('click',()=>{state.activeSection=s.id;renderBody();window.scrollTo({top:0});});
+    card.appendChild(btn);
+  });
+  aside.appendChild(card);
+  const jump=el(`<button class="jumpbtn">${I.jump} Jump to next to do</button>`);
+  jump.addEventListener('click',()=>{
+    const next=ALL_TESTS.find(t=>!(state.results[t.id]&&state.results[t.id].status));
+    if(!next){toast('Every test has a result');return;}
+    state.activeSection=next.sectionId; state.filter='all'; renderBody();
+    setTimeout(()=>{const e=document.getElementById('test-'+next.id);if(e)e.scrollIntoView({behavior:'smooth',block:'center'});},60);
+  });
+  aside.appendChild(jump);
+  return aside;
+}
+function testsView(){
+  const wrap=document.createElement('div'); wrap.className='shell';
+  wrap.appendChild(buildSidebar());
+  const main=document.createElement('main'); main.id='main';
+  wrap.appendChild(main);
+  renderMain(main);
+  return wrap;
+}
+function renderMain(main){
+  main=main||document.getElementById('main');
+  const sec=SECTIONS.find(s=>s.id===state.activeSection);
+  main.innerHTML='';
+  const head=el(`<div class="mhead"><h2><span class="num" style="color:var(--blue);margin-right:8px">${sec.id}</span>${esc(sec.title)}</h2>
+    <div class="filterbtns" id="filterBtns">
+      <button data-f="all" class="${state.filter==='all'?'on':''}">All</button>
+      <button data-f="untested" class="${state.filter==='untested'?'on':''}">To do</button>
+      <button data-f="issues" class="${state.filter==='issues'?'on':''}">Issues</button>
+    </div></div>`);
+  head.querySelector('#filterBtns').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.filter=b.dataset.f;renderMain(main);});
+  main.appendChild(head);
+  main.appendChild(el('<div class="badge-legend">Badges flag tests that need extra care. Hover meanings: Real email sends a live message; Known stub is deliberately unfinished; Backend confirm may error server-side; Build check verifies the right build; Live-data tell confirms real data.</div>'));
+
+  if(sec.callout)main.appendChild(el(`<div class="callout ${sec.callout.type}">${esc(sec.callout.text)}</div>`));
+
+  const visible=sec.tests.filter(t=>{
+    const s=state.results[t.id]&&state.results[t.id].status;
+    if(state.filter==='untested')return !s;
+    if(state.filter==='issues')return s==='fail'||s==='partial';
+    return true;
+  });
+  if(!visible.length)main.appendChild(el('<div class="card" style="padding:28px;text-align:center;color:var(--muted)">Nothing matches this filter in this section.</div>'));
+  visible.forEach(t=>main.appendChild(testCard(t)));
+
+  if(sec.footnote)main.appendChild(el(`<div class="callout warn" style="margin-top:4px">${esc(sec.footnote)}</div>`));
+}
+function testCard(t){
+  const res=state.results[t.id]||{};
+  const accent=res.status?STATUS[res.status].col:'var(--border)';
+  const tags=(t.tags||[]).map(k=>{const g=TAGS[k];return `<span class="tag" title="${esc(g.label)}" style="background:${g.bg};color:${g.col};border-color:${g.bd}">${esc(g.label)}</span>`;}).join('');
+  const card=el(`<div class="tcard card" id="test-${t.id}" style="border-left-color:${accent}">
+    <div class="pad">
+      <div class="mhead" style="margin-bottom:8px">
+        <span class="num tnum">${t.id}</span><span class="ttitle">${esc(t.title)}</span>
+        <span class="tagrow" style="margin-left:auto">${tags}</span>
+      </div>
+      <div class="tbody">
+        <p><strong>Do this.</strong> ${esc(t.steps)}</p>
+        <p><strong>Expected.</strong> ${esc(t.expected)}</p>
+      </div>
+      <div class="statusrow" data-id="${t.id}">
+        ${statusBtn('pass',res.status)} ${statusBtn('partial',res.status)} ${statusBtn('fail',res.status)}
+      </div>
+      <textarea class="notes" placeholder="What did you actually see? Most useful for Fail and Partial.">${esc(res.notes||'')}</textarea>
+      <div class="dropzone" tabindex="0">
+        <div class="dzhint">${I.cam}<span>Click here and paste a screenshot (Ctrl+V or Cmd+V), drag an image in, or</span>
+          <label class="dzlink">choose a file<input type="file" accept="image/*" multiple style="display:none"></label>
+        </div>
+        <div class="thumbs"></div>
+      </div>
+    </div>
+  </div>`);
+
+  // status buttons
+  card.querySelector('.statusrow').addEventListener('click',e=>{
+    const b=e.target.closest('button[data-s]'); if(!b)return;
+    const kind=b.dataset.s;
+    const cur=(state.results[t.id]||{}).status;
+    const next=cur===kind?'':kind;
+    state.results[t.id]=Object.assign({},state.results[t.id],{status:next});
+    // update buttons
+    card.querySelectorAll('.statusrow button').forEach(btn=>{
+      const k=btn.dataset.s, on=(k===next);
+      const st=STATUS[k];
+      btn.style.background=on?st.col:st.bg; btn.style.color=on?'#fff':st.col; btn.style.borderColor=on?st.col:'transparent';
+    });
+    card.style.borderLeftColor=next?STATUS[next].col:'var(--border)';
+    scheduleSave(); refreshProgress();
+  });
+  // notes
+  card.querySelector('.notes').addEventListener('input',e=>{
+    state.results[t.id]=Object.assign({},state.results[t.id],{notes:e.target.value}); scheduleSave();
+  });
+  // screenshots
+  const dz=card.querySelector('.dropzone');
+  const thumbs=card.querySelector('.thumbs');
+  function renderThumbs(){
+    thumbs.innerHTML='';
+    (state.shots[t.id]||[]).forEach((src,i)=>{
+      const th=el(`<div class="thumb"><img src="${src}" alt="screenshot ${i+1}"><button title="Remove">${I.x}</button></div>`);
+      th.querySelector('button').addEventListener('click',()=>{
+        const arr=(state.shots[t.id]||[]).slice(); arr.splice(i,1); state.shots[t.id]=arr;
+        if(arr.length)Store.set(K_SHOT(t.id),JSON.stringify(arr)); else Store.del(K_SHOT(t.id));
+        renderThumbs();
+      });
+      thumbs.appendChild(th);
+    });
+  }
+  async function addFiles(list){
+    const files=Array.from(list||[]).filter(f=>f.type.indexOf('image/')===0);
+    for(const f of files){try{const d=await compressImage(f);state.shots[t.id]=(state.shots[t.id]||[]).concat([d]);}catch(e){toast('Could not read that image');}}
+    if(files.length){Store.set(K_SHOT(t.id),JSON.stringify(state.shots[t.id]));renderThumbs();toast(files.length===1?'Screenshot added':files.length+' screenshots added');}
+  }
+  dz.addEventListener('paste',e=>{
+    const items=(e.clipboardData&&e.clipboardData.items)||[]; const fs=[];
+    for(const it of items)if(it.type.indexOf('image/')===0){const f=it.getAsFile();if(f)fs.push(f);}
+    if(fs.length){e.preventDefault();addFiles(fs);}
+  });
+  dz.addEventListener('drop',e=>{e.preventDefault();addFiles(e.dataTransfer.files);});
+  dz.addEventListener('dragover',e=>e.preventDefault());
+  card.querySelector('input[type=file]').addEventListener('change',e=>{addFiles(e.target.files);e.target.value='';});
+  renderThumbs();
+  return card;
+}
+function statusBtn(kind,current){
+  const st=STATUS[kind], on=current===kind;
+  const ic=kind==='pass'?I.check:kind==='fail'?I.x:I.warn;
+  return `<button class="sbtn" data-s="${kind}" style="background:${on?st.col:st.bg};color:${on?'#fff':st.col};border-color:${on?st.col:'transparent'}">${ic}${st.label}</button>`;
+}
+
+/* =========================== RENDER: report =========================== */
+function reportView(){
+  const c=counts();
+  const issues=ALL_TESTS.filter(t=>{const s=state.results[t.id]&&state.results[t.id].status;return s==='fail'||s==='partial';});
+  const wrap=document.createElement('div'); wrap.className='rep';
+
+  const top=el(`<div class="card" style="padding:22px">
+    <h1 style="margin:0 0 4px;font-size:22px">QA report</h1>
+    <p style="margin:0;color:var(--muted);font-size:13.5px">${state.meta.tester?esc(state.meta.tester)+' &middot; ':''}${esc(state.meta.date)} &middot; live build</p>
+    <div class="stats">
+      <div class="stat"><div class="v num" style="color:var(--green)">${c.pass}</div><div class="l">Pass</div></div>
+      <div class="stat"><div class="v num" style="color:var(--gold)">${c.partial}</div><div class="l">Partial</div></div>
+      <div class="stat"><div class="v num" style="color:var(--red)">${c.fail}</div><div class="l">Fail</div></div>
+      <div class="stat"><div class="v num" style="color:#4B6577">${c.untested}</div><div class="l">To do</div></div>
+    </div>
+    <div class="actions">
+      <button class="abtn primary" id="dlHtml">${I.down} Download report (HTML)</button>
+      <button class="abtn" id="copyTxt">${I.copy} Copy summary for email</button>
+      <button class="abtn" id="dlJson">${I.down} Export backup</button>
+      <button class="abtn" id="upJson">${I.up} Restore backup</button>
+      <button class="abtn danger" id="resetAll">${I.reset} Clear all</button>
+      <input type="file" id="jsonFile" accept="application/json" style="display:none">
+    </div>
+    <p style="margin:12px 0 0;font-size:12.5px;color:var(--muted)">Send the downloaded report and screenshots to ${REPORT_EMAIL}, referencing test numbers.</p>
+  </div>`);
+  wrap.appendChild(top);
+
+  top.querySelector('#dlHtml').addEventListener('click',()=>{const ok=downloadBlob('emPartner_QA_report_'+slug()+'_'+state.meta.date+'.html',buildHtmlReport(),'text/html');toast(ok?'Report downloaded':'Download blocked by browser');});
+  top.querySelector('#copyTxt').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(buildTextReport());toast('Summary copied, paste into your email');}catch(e){toast('Could not access clipboard');}});
+  top.querySelector('#dlJson').addEventListener('click',()=>{const ok=downloadBlob('emPartner_QA_backup_'+slug()+'_'+state.meta.date+'.json',JSON.stringify({meta:state.meta,results:state.results,shots:state.shots,generatedAt:new Date().toISOString()}),'application/json');toast(ok?'Backup downloaded':'Download blocked');});
+  top.querySelector('#upJson').addEventListener('click',()=>top.querySelector('#jsonFile').click());
+  top.querySelector('#jsonFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const p=JSON.parse(r.result);if(p.meta)state.meta=p.meta;if(p.results)state.results=p.results;if(p.shots){state.shots=p.shots;Object.keys(p.shots).forEach(id=>Store.set(K_SHOT(id),JSON.stringify(p.shots[id])));}scheduleSave();render();toast('Backup restored');}catch(err){toast('That file could not be read');}};r.readAsText(f);e.target.value='';});
+  top.querySelector('#resetAll').addEventListener('click',async()=>{if(!confirm('Clear all results, notes and screenshots on this device. This cannot be undone.'))return;state.results={};state.shots={};await Store.set(K_STATE,JSON.stringify({meta:state.meta,results:{}}));const ks=await Store.list('qa:shots:');for(const k of ks)await Store.del(k);render();toast('Cleared');});
+
+  // issues
+  wrap.appendChild(el(`<h2 style="font-size:17px;margin:26px 0 12px">Issues to triage <span class="num" style="color:var(--muted);font-size:14px">(${issues.length})</span></h2>`));
+  if(!issues.length)wrap.appendChild(el('<div class="card" style="padding:22px;color:var(--muted)">No Fail or Partial results recorded yet.</div>'));
+  issues.forEach(t=>{
+    const r=state.results[t.id], s=STATUS[r.status], sh=state.shots[t.id]||[];
+    const node=el(`<div class="card issue" style="border-left-color:${s.col}">
+      <div class="ihead"><span class="num" style="color:var(--blue);font-weight:600">${t.id}</span><span style="font-weight:600">${esc(t.title)}</span><span class="ibadge" style="background:${s.col}">${s.label}</span></div>
+      ${r.notes?`<p style="margin:9px 0 0;font-size:13.5px;line-height:1.5;color:var(--ink);white-space:pre-wrap">${esc(r.notes)}</p>`:''}
+      <div class="thumbs">${sh.map(src=>`<img src="${src}" style="height:96px;border-radius:8px;border:1px solid var(--border)">`).join('')}</div>
+    </div>`);
+    wrap.appendChild(node);
+  });
+
+  // full results
+  wrap.appendChild(el('<h2 style="font-size:17px;margin:26px 0 12px">All results</h2>'));
+  SECTIONS.forEach(sec=>{
+    const block=el(`<div style="margin-bottom:16px"><h3 class="secref"><span class="num" style="color:var(--blue);margin-right:7px">${sec.id}</span>${esc(sec.title)}</h3><div class="card"></div></div>`);
+    const list=block.querySelector('.card');
+    sec.tests.forEach(t=>{
+      const st=state.results[t.id]&&state.results[t.id].status;
+      const s=st?STATUS[st]:null;
+      const hasShot=(state.shots[t.id]||[]).length>0;
+      list.appendChild(el(`<div class="resrow"><span class="num" style="color:var(--muted);width:38px">${t.id}</span><span style="flex:1">${esc(t.title)}</span>${hasShot?'<span style="color:var(--muted)">'+I.cam+'</span>':''}<span class="respill" style="color:${s?s.col:'var(--muted)'};background:${s?s.bg:'#EDF1F5'}">${s?s.label:'to do'}</span></div>`));
+    });
+    wrap.appendChild(block);
+  });
+  return wrap;
+}
+
+/* =========================== RENDER: reference ======================== */
+function referenceView(){
+  const wrap=document.createElement('div'); wrap.className='rep';
+  wrap.appendChild(el('<div class="card" style="padding:20px"><h1 style="margin:0 0 6px;font-size:21px">Reference</h1><p style="margin:0;color:var(--muted);font-size:13.5px">Known stubs, backend-confirm items and the live-vs-fixture watchlist. These are context, not pass/fail tests.</p></div>'));
+  APPENDICES.forEach(ap=>{
+    const block=document.createElement('div'); block.style.marginTop='20px';
+    block.appendChild(el(`<h2 style="font-size:16px;margin:0 0 10px"><span class="num" style="color:var(--blue);margin-right:8px">${ap.id}</span>${esc(ap.title)}</h2>`));
+    if(ap.kind==='table'){
+      const t=el('<table class="ref"><thead><tr>'+ap.head.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+ap.rows.map(r=>'<tr>'+r.map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join('')+'</tbody></table>');
+      block.appendChild(t);
+    } else {
+      block.appendChild(el('<ul class="reflist card" style="padding:14px 14px 14px 30px;margin:0">'+ap.items.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>'));
+    }
+    wrap.appendChild(block);
+  });
+  return wrap;
+}
+
+/* =========================== report builders ========================== */
+function buildTextReport(){
+  const c=counts();
+  const L=[];
+  L.push('emPartner CRM QA report (LIVE build)');
+  L.push((state.meta.tester?'Tester: '+state.meta.tester+'  ':'')+'Date: '+state.meta.date);
+  L.push('');
+  L.push('Pass '+c.pass+'  Partial '+c.partial+'  Fail '+c.fail+'  To do '+c.untested+'  of '+TOTAL);
+  L.push('');
+  L.push('Issues to triage:');
+  const issues=ALL_TESTS.filter(t=>{const s=state.results[t.id]&&state.results[t.id].status;return s==='fail'||s==='partial';});
+  if(!issues.length)L.push('  none recorded');
+  issues.forEach(t=>{
+    const r=state.results[t.id]; const n=(state.shots[t.id]||[]).length;
+    L.push('  '+t.id+' '+STATUS[r.status].label.toUpperCase()+': '+t.title+(n?' ['+n+' screenshot'+(n>1?'s':'')+']':''));
+    if(r.notes)L.push('      '+r.notes.replace(/\n/g,' '));
+  });
+  L.push('');
+  L.push('Send the full HTML report and screenshots to '+REPORT_EMAIL);
+  return L.join('\n');
+}
+function buildHtmlReport(){
+  const c=counts();
+  const issues=ALL_TESTS.filter(t=>{const s=state.results[t.id]&&state.results[t.id].status;return s==='fail'||s==='partial';});
+  const issuesHtml=issues.length?issues.map(t=>{
+    const r=state.results[t.id], s=STATUS[r.status], sh=state.shots[t.id]||[];
+    return '<div class="issue" style="border-left:4px solid '+s.col+'"><div class="ihead"><b class="num">'+t.id+'</b> '+esc(t.title)+'<span class="badge" style="background:'+s.col+'">'+s.label+'</span></div>'+(r.notes?'<p>'+esc(r.notes)+'</p>':'')+sh.map(src=>'<img src="'+src+'">').join('')+'</div>';
+  }).join(''):'<p class="muted">No Fail or Partial results recorded.</p>';
+  const table=SECTIONS.map(sec=>'<h3><span class="num">'+sec.id+'</span> '+esc(sec.title)+'</h3><table>'+sec.tests.map(t=>{const st=state.results[t.id]&&state.results[t.id].status;const s=st?STATUS[st]:null;return '<tr><td class="num">'+t.id+'</td><td>'+esc(t.title)+'</td><td style="color:'+(s?s.col:'#A0AEC0')+';font-weight:600">'+(s?s.label:'to do')+'</td><td>'+esc((state.results[t.id]||{}).notes||'')+'</td></tr>';}).join('')+'</table>').join('');
+  return '<!doctype html><html lang="en-AU"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>emPartner CRM QA report '+esc(state.meta.date)+'</title><style>body{font-family:Inter,system-ui,sans-serif;color:#0F2B3C;margin:0;background:#F7F8FA}.wrap{max-width:880px;margin:0 auto;padding:28px}h1{font-size:24px;margin:0 0 4px}h2{font-size:18px;margin:30px 0 12px}h3{font-size:14px;margin:18px 0 6px}.muted{color:#A0AEC0}.num{font-family:"DM Mono",monospace}.stats{display:flex;gap:12px;margin:18px 0}.stat{flex:1;border:1px solid #E2E8F0;border-radius:10px;padding:12px 14px;background:#fff}.stat .v{font-size:26px;font-weight:600}.stat .l{font-size:12px;color:#A0AEC0}.issue{background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:14px;margin-bottom:12px}.ihead{font-size:15px}.badge{color:#fff;font-size:11px;font-weight:700;border-radius:6px;padding:2px 8px;margin-left:8px}.issue p{font-size:13.5px;line-height:1.5;color:#3A4A55;white-space:pre-wrap}.issue img{height:140px;border-radius:8px;border:1px solid #E2E8F0;margin:6px 6px 0 0}table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #E2E8F0;border-radius:10px;overflow:hidden;font-size:13px;margin-bottom:14px}td{padding:7px 11px;border-top:1px solid #EDF1F5;vertical-align:top}td:first-child{color:#A0AEC0;width:42px}td:nth-child(2){width:34%}@media print{body{background:#fff}.issue,table{break-inside:avoid}}</style></head><body><div class="wrap"><h1>emPartner&trade; CRM QA report (LIVE build)</h1><p class="muted">'+(state.meta.tester?'Tester: '+esc(state.meta.tester)+' &middot; ':'')+esc(state.meta.date)+'</p><div class="stats"><div class="stat"><div class="v" style="color:#0F6E56">'+c.pass+'</div><div class="l">Pass</div></div><div class="stat"><div class="v" style="color:#EFBD19">'+c.partial+'</div><div class="l">Partial</div></div><div class="stat"><div class="v" style="color:#C94246">'+c.fail+'</div><div class="l">Fail</div></div><div class="stat"><div class="v" style="color:#4B6577">'+c.untested+'</div><div class="l">To do</div></div></div><h2>Issues to triage ('+issues.length+')</h2>'+issuesHtml+'<h2>All results</h2>'+table+'<p class="muted" style="margin-top:24px">Generated '+new Date().toLocaleString('en-AU')+'. Return to '+REPORT_EMAIL+', referencing test numbers.</p></div></body></html>';
+}
+
+/* =========================== store bar ================================ */
+function renderStoreBar(){
+  const old=document.querySelector('.storebar'); if(old)old.remove();
+  if(Store.kind==='memory'){
+    document.body.appendChild(el('<div class="storebar" style="background:var(--gold-light);border-top:1px solid var(--gold);color:#7A5A00">Progress is held in this tab only. Use Export backup in the Report tab to save your work before closing.</div>'));
+  }
+}
+
+/* =========================== boot ===================================== */
+(async function boot(){
+  try{
+    const raw=await Store.get(K_STATE);
+    if(raw){const p=JSON.parse(raw);if(p.meta)state.meta=Object.assign(state.meta,p.meta);if(p.results)state.results=p.results;}
+    const keys=await Store.list('qa:shots:');
+    for(const k of keys){const v=await Store.get(k);if(v){try{state.shots[k.replace('qa:shots:','')]=JSON.parse(v);}catch(e){}}}
+  }catch(e){}
+  state.loaded=true;
+  render();
+})();
+</script>
+</body>
+</html>
