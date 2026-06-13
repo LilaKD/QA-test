@@ -91,7 +91,7 @@
 
   /* report */
   .rep{max-width:920px;margin:0 auto;padding:22px 18px 90px}
-  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:18px}
   .stat{border:1px solid var(--border);border-radius:11px;padding:12px 14px;background:#fff}
   .stat .v{font-size:26px;font-weight:600}
   .stat .l{font-size:12px;color:var(--muted);font-weight:500}
@@ -163,6 +163,9 @@ const Store = (() => {
 })();
 const K_STATE='qa:state';
 const K_SHOT=id=>'qa:shots:'+id;
+const K_GLOBAL='qa:global';
+const K_GSHOT=id=>'qa:gshots:'+id;
+function uid(){return 'g'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 
 /* ----- tags shown as small badges on a test ----- */
 const TAGS = {
@@ -175,7 +178,8 @@ const TAGS = {
 const STATUS = {
   pass:{label:'Pass', col:'#0F6E56', bg:'#E6F1ED'},
   partial:{label:'Partial', col:'#B7860B', bg:'#FDF4DA'},
-  fail:{label:'Fail', col:'#C94246', bg:'#FBE9EA'}
+  fail:{label:'Fail', col:'#C94246', bg:'#FBE9EA'},
+  blocked:{label:'Blocked', col:'#5B6B7A', bg:'#EAEEF2'}
 };
 
 /* =========================== TEST CONTENT =============================== */
@@ -452,6 +456,8 @@ const state = {
   meta:{tester:'', date:new Date().toISOString().slice(0,10)},
   results:{},   // id -> {status, notes}
   shots:{},     // id -> [dataURL]
+  global:{bugs:[], requests:[]}, // global findings: cross-cutting bugs + change requests
+  gshots:{},    // global item id -> [dataURL]
   view:'tests',
   activeSection:'1',
   filter:'all',
@@ -462,15 +468,20 @@ function scheduleSave(){
   clearTimeout(saveTimer);
   saveTimer=setTimeout(()=>Store.set(K_STATE, JSON.stringify({meta:state.meta, results:state.results})), 600);
 }
+let gSaveTimer=null;
+function scheduleSaveGlobal(){
+  clearTimeout(gSaveTimer);
+  gSaveTimer=setTimeout(()=>Store.set(K_GLOBAL, JSON.stringify(state.global)), 600);
+}
 
 /* =========================== HELPERS ==================================== */
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 function el(html){const d=document.createElement('div');d.innerHTML=html.trim();return d.firstElementChild;}
 function counts(){
-  let pass=0,fail=0,partial=0;
-  for(const t of ALL_TESTS){const s=state.results[t.id]&&state.results[t.id].status;if(s==='pass')pass++;else if(s==='fail')fail++;else if(s==='partial')partial++;}
-  const done=pass+fail+partial;
-  return {pass,fail,partial,done,untested:TOTAL-done};
+  let pass=0,fail=0,partial=0,blocked=0;
+  for(const t of ALL_TESTS){const s=state.results[t.id]&&state.results[t.id].status;if(s==='pass')pass++;else if(s==='fail')fail++;else if(s==='partial')partial++;else if(s==='blocked')blocked++;}
+  const done=pass+fail+partial+blocked;
+  return {pass,fail,partial,blocked,done,untested:TOTAL-done};
 }
 function sectionProgress(sec){
   const ids=sec.tests.map(t=>t.id);
@@ -522,7 +533,10 @@ const I={
   up:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
   reset:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>',
   file:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
-  jump:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><polyline points="19 12 12 19 5 12"/></svg>'
+  jump:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><polyline points="19 12 12 19 5 12"/></svg>',
+  ban:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>',
+  plus:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+  globe:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>'
 };
 
 /* =========================== RENDER: shell ============================= */
@@ -546,6 +560,7 @@ function topBar(c){
         <input class="tb-input" id="dateInput" type="date" value="${esc(state.meta.date)}">
         <div class="viewbtns" id="viewBtns">
           <button data-v="tests" class="${state.view==='tests'?'on':''}">Tests</button>
+          <button data-v="global" class="${state.view==='global'?'on':''}">Global</button>
           <button data-v="report" class="${state.view==='report'?'on':''}">Report</button>
           <button data-v="reference" class="${state.view==='reference'?'on':''}">Reference</button>
         </div>
@@ -556,6 +571,7 @@ function topBar(c){
         <i style="width:${c.pass/TOTAL*100}%;background:var(--green)"></i>
         <i style="width:${c.partial/TOTAL*100}%;background:var(--gold)"></i>
         <i style="width:${c.fail/TOTAL*100}%;background:var(--red)"></i>
+        <i style="width:${c.blocked/TOTAL*100}%;background:#5B6B7A"></i>
       </div>
       <span class="num sub" style="white-space:nowrap" id="progCount">${c.done}/${TOTAL} done</span>
     </div>
@@ -563,6 +579,7 @@ function topBar(c){
       <span><i class="ldot" style="background:var(--green)"></i>${c.pass} pass</span>
       <span><i class="ldot" style="background:var(--gold)"></i>${c.partial} partial</span>
       <span><i class="ldot" style="background:var(--red)"></i>${c.fail} fail</span>
+      <span><i class="ldot" style="background:#5B6B7A"></i>${c.blocked} blocked</span>
       <span><i class="ldot" style="background:#4B6577"></i>${c.untested} to do</span>
     </div>
   </div>`);
@@ -574,16 +591,17 @@ function topBar(c){
 function refreshProgress(){
   const c=counts();
   const pb=document.getElementById('progbar');
-  if(pb)pb.innerHTML=`<i style="width:${c.pass/TOTAL*100}%;background:var(--green)"></i><i style="width:${c.partial/TOTAL*100}%;background:var(--gold)"></i><i style="width:${c.fail/TOTAL*100}%;background:var(--red)"></i>`;
+  if(pb)pb.innerHTML=`<i style="width:${c.pass/TOTAL*100}%;background:var(--green)"></i><i style="width:${c.partial/TOTAL*100}%;background:var(--gold)"></i><i style="width:${c.fail/TOTAL*100}%;background:var(--red)"></i><i style="width:${c.blocked/TOTAL*100}%;background:#5B6B7A"></i>`;
   const pc=document.getElementById('progCount'); if(pc)pc.textContent=`${c.done}/${TOTAL} done`;
   const lg=document.getElementById('legend');
-  if(lg)lg.innerHTML=`<span><i class="ldot" style="background:var(--green)"></i>${c.pass} pass</span><span><i class="ldot" style="background:var(--gold)"></i>${c.partial} partial</span><span><i class="ldot" style="background:var(--red)"></i>${c.fail} fail</span><span><i class="ldot" style="background:#4B6577"></i>${c.untested} to do</span>`;
+  if(lg)lg.innerHTML=`<span><i class="ldot" style="background:var(--green)"></i>${c.pass} pass</span><span><i class="ldot" style="background:var(--gold)"></i>${c.partial} partial</span><span><i class="ldot" style="background:var(--red)"></i>${c.fail} fail</span><span><i class="ldot" style="background:#5B6B7A"></i>${c.blocked} blocked</span><span><i class="ldot" style="background:#4B6577"></i>${c.untested} to do</span>`;
   const side=document.getElementById('sidecard'); if(side)side.replaceWith(buildSidebar());
 }
 function renderBody(){
   const body=document.getElementById('body');
   body.innerHTML='';
   if(state.view==='tests')body.appendChild(testsView());
+  else if(state.view==='global')body.appendChild(globalView());
   else if(state.view==='report')body.appendChild(reportView());
   else body.appendChild(referenceView());
 }
@@ -666,7 +684,7 @@ function testCard(t){
         <p><strong>Expected.</strong> ${esc(t.expected)}</p>
       </div>
       <div class="statusrow" data-id="${t.id}">
-        ${statusBtn('pass',res.status)} ${statusBtn('partial',res.status)} ${statusBtn('fail',res.status)}
+        ${statusBtn('pass',res.status)} ${statusBtn('partial',res.status)} ${statusBtn('fail',res.status)} ${statusBtn('blocked',res.status)}
       </div>
       <textarea class="notes" placeholder="What did you actually see? Most useful for Fail and Partial.">${esc(res.notes||'')}</textarea>
       <div class="dropzone" tabindex="0">
@@ -731,8 +749,111 @@ function testCard(t){
 }
 function statusBtn(kind,current){
   const st=STATUS[kind], on=current===kind;
-  const ic=kind==='pass'?I.check:kind==='fail'?I.x:I.warn;
+  const ic=kind==='pass'?I.check:kind==='fail'?I.x:kind==='blocked'?I.ban:I.warn;
   return `<button class="sbtn" data-s="${kind}" style="background:${on?st.col:st.bg};color:${on?'#fff':st.col};border-color:${on?st.col:'transparent'}">${ic}${st.label}</button>`;
+}
+
+/* reusable screenshot zone: wires paste/drop/file + thumbs for a given
+   getter/setter pair against a storage key */
+function buildShotZone(getArr, setArr, storeKey){
+  const dz=el(`<div class="dropzone" tabindex="0">
+    <div class="dzhint">${I.cam}<span>Click here and paste a screenshot (Ctrl+V or Cmd+V), drag an image in, or</span>
+      <label class="dzlink">choose a file<input type="file" accept="image/*" multiple style="display:none"></label>
+    </div>
+    <div class="thumbs"></div>
+  </div>`);
+  const thumbs=dz.querySelector('.thumbs');
+  function renderThumbs(){
+    thumbs.innerHTML='';
+    (getArr()||[]).forEach((src,i)=>{
+      const th=el(`<div class="thumb"><img src="${src}" alt="screenshot ${i+1}"><button title="Remove">${I.x}</button></div>`);
+      th.querySelector('button').addEventListener('click',()=>{
+        const arr=(getArr()||[]).slice(); arr.splice(i,1); setArr(arr);
+        if(arr.length)Store.set(storeKey,JSON.stringify(arr)); else Store.del(storeKey);
+        renderThumbs();
+      });
+      thumbs.appendChild(th);
+    });
+  }
+  async function addFiles(list){
+    const files=Array.from(list||[]).filter(f=>f.type.indexOf('image/')===0);
+    for(const f of files){try{const d=await compressImage(f);setArr((getArr()||[]).concat([d]));}catch(e){toast('Could not read that image');}}
+    if(files.length){Store.set(storeKey,JSON.stringify(getArr()));renderThumbs();toast(files.length===1?'Screenshot added':files.length+' screenshots added');}
+  }
+  dz.addEventListener('paste',e=>{
+    const items=(e.clipboardData&&e.clipboardData.items)||[]; const fs=[];
+    for(const it of items)if(it.type.indexOf('image/')===0){const f=it.getAsFile();if(f)fs.push(f);}
+    if(fs.length){e.preventDefault();addFiles(fs);}
+  });
+  dz.addEventListener('drop',e=>{e.preventDefault();addFiles(e.dataTransfer.files);});
+  dz.addEventListener('dragover',e=>e.preventDefault());
+  dz.querySelector('input[type=file]').addEventListener('change',e=>{addFiles(e.target.files);e.target.value='';});
+  renderThumbs();
+  return dz;
+}
+
+/* =========================== RENDER: global =========================== */
+function globalView(){
+  const wrap=document.createElement('div'); wrap.className='rep';
+  wrap.appendChild(el(`<div class="card" style="padding:20px">
+    <h1 style="margin:0 0 6px;font-size:21px">Global findings</h1>
+    <p style="margin:0;color:var(--muted);font-size:13.5px">For things that do not belong to one test. Keep build bugs (for Div) separate from your own change requests. Both flow into the report.</p>
+  </div>`));
+  wrap.appendChild(globalList('bugs','Global bugs','Cross-cutting build defects that are not tied to a single test (for Div).','#C94246'));
+  wrap.appendChild(globalList('requests','My change requests','New asks and design changes you are deciding, not build bugs.','#1E8FBC'));
+  return wrap;
+}
+function globalList(key,title,blurb,accent){
+  const block=document.createElement('div'); block.style.marginTop='22px';
+  const head=el(`<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+    <h2 style="font-size:17px;margin:0">${esc(title)}</h2>
+    <span class="num gcount" style="color:var(--muted);font-size:13px">(${state.global[key].length})</span>
+    <button class="abtn primary additem" style="margin-left:auto">${I.plus} Add</button>
+  </div>`);
+  block.appendChild(head);
+  block.appendChild(el(`<p style="margin:0 0 12px;color:var(--muted);font-size:12.5px">${esc(blurb)}</p>`));
+  const countSpan=head.querySelector('.gcount');
+  const listEl=document.createElement('div');
+  block.appendChild(listEl);
+  function paint(){
+    countSpan.textContent='('+state.global[key].length+')';
+    listEl.innerHTML='';
+    if(!state.global[key].length){
+      listEl.appendChild(el(`<div class="card" style="padding:20px;color:var(--muted);font-size:13.5px">None yet. Use Add to record one.</div>`));
+    }
+    state.global[key].forEach((item,idx)=>listEl.appendChild(globalCard(key,item,idx,accent,paint)));
+  }
+  block.querySelector('.additem').addEventListener('click',()=>{
+    state.global[key].unshift({id:uid(),title:'',notes:''});
+    scheduleSaveGlobal(); paint();
+    setTimeout(()=>{const f=listEl.querySelector('input.gtitle');if(f)f.focus();},40);
+  });
+  paint();
+  return block;
+}
+function globalCard(key,item,idx,accent,repaint){
+  const card=el(`<div class="card" style="padding:14px 16px;margin-bottom:12px;border-left:4px solid ${accent}">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <span class="num" style="color:var(--muted);font-size:12px">${key==='bugs'?'BUG':'REQ'} ${idx+1}</span>
+      <input class="gtitle tb-input" style="flex:1;background:#fff;color:var(--navy);border:1px solid var(--border)" placeholder="Short title" value="${esc(item.title)}">
+      <button class="gdel" title="Remove" style="background:transparent;color:var(--red)">${I.x}</button>
+    </div>
+    <textarea class="notes gnotes" placeholder="Describe it. Where it happens, what is wrong, what it should do.">${esc(item.notes||'')}</textarea>
+    <div class="gshotwrap"></div>
+  </div>`);
+  card.querySelector('.gtitle').addEventListener('input',e=>{item.title=e.target.value;scheduleSaveGlobal();});
+  card.querySelector('.gnotes').addEventListener('input',e=>{item.notes=e.target.value;scheduleSaveGlobal();});
+  card.querySelector('.gdel').addEventListener('click',()=>{
+    if(!confirm('Remove this entry?'))return;
+    const i=state.global[key].indexOf(item);
+    if(i>-1)state.global[key].splice(i,1);
+    Store.del(K_GSHOT(item.id)); delete state.gshots[item.id];
+    scheduleSaveGlobal(); repaint();
+  });
+  card.querySelector('.gshotwrap').appendChild(
+    buildShotZone(()=>state.gshots[item.id], arr=>{state.gshots[item.id]=arr;}, K_GSHOT(item.id))
+  );
+  return card;
 }
 
 /* =========================== RENDER: report =========================== */
@@ -748,6 +869,7 @@ function reportView(){
       <div class="stat"><div class="v num" style="color:var(--green)">${c.pass}</div><div class="l">Pass</div></div>
       <div class="stat"><div class="v num" style="color:var(--gold)">${c.partial}</div><div class="l">Partial</div></div>
       <div class="stat"><div class="v num" style="color:var(--red)">${c.fail}</div><div class="l">Fail</div></div>
+      <div class="stat"><div class="v num" style="color:#5B6B7A">${c.blocked}</div><div class="l">Blocked</div></div>
       <div class="stat"><div class="v num" style="color:#4B6577">${c.untested}</div><div class="l">To do</div></div>
     </div>
     <div class="actions">
@@ -764,10 +886,10 @@ function reportView(){
 
   top.querySelector('#dlHtml').addEventListener('click',()=>{const ok=downloadBlob('emPartner_QA_report_'+slug()+'_'+state.meta.date+'.html',buildHtmlReport(),'text/html');toast(ok?'Report downloaded':'Download blocked by browser');});
   top.querySelector('#copyTxt').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(buildTextReport());toast('Summary copied, paste into your email');}catch(e){toast('Could not access clipboard');}});
-  top.querySelector('#dlJson').addEventListener('click',()=>{const ok=downloadBlob('emPartner_QA_backup_'+slug()+'_'+state.meta.date+'.json',JSON.stringify({meta:state.meta,results:state.results,shots:state.shots,generatedAt:new Date().toISOString()}),'application/json');toast(ok?'Backup downloaded':'Download blocked');});
+  top.querySelector('#dlJson').addEventListener('click',()=>{const ok=downloadBlob('emPartner_QA_backup_'+slug()+'_'+state.meta.date+'.json',JSON.stringify({meta:state.meta,results:state.results,shots:state.shots,global:state.global,gshots:state.gshots,generatedAt:new Date().toISOString()}),'application/json');toast(ok?'Backup downloaded':'Download blocked');});
   top.querySelector('#upJson').addEventListener('click',()=>top.querySelector('#jsonFile').click());
-  top.querySelector('#jsonFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const p=JSON.parse(r.result);if(p.meta)state.meta=p.meta;if(p.results)state.results=p.results;if(p.shots){state.shots=p.shots;Object.keys(p.shots).forEach(id=>Store.set(K_SHOT(id),JSON.stringify(p.shots[id])));}scheduleSave();render();toast('Backup restored');}catch(err){toast('That file could not be read');}};r.readAsText(f);e.target.value='';});
-  top.querySelector('#resetAll').addEventListener('click',async()=>{if(!confirm('Clear all results, notes and screenshots on this device. This cannot be undone.'))return;state.results={};state.shots={};await Store.set(K_STATE,JSON.stringify({meta:state.meta,results:{}}));const ks=await Store.list('qa:shots:');for(const k of ks)await Store.del(k);render();toast('Cleared');});
+  top.querySelector('#jsonFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const p=JSON.parse(r.result);if(p.meta)state.meta=p.meta;if(p.results)state.results=p.results;if(p.shots){state.shots=p.shots;Object.keys(p.shots).forEach(id=>Store.set(K_SHOT(id),JSON.stringify(p.shots[id])));}if(p.global){state.global={bugs:p.global.bugs||[],requests:p.global.requests||[]};Store.set(K_GLOBAL,JSON.stringify(state.global));}if(p.gshots){state.gshots=p.gshots;Object.keys(p.gshots).forEach(id=>Store.set(K_GSHOT(id),JSON.stringify(p.gshots[id])));}scheduleSave();render();toast('Backup restored');}catch(err){toast('That file could not be read');}};r.readAsText(f);e.target.value='';});
+  top.querySelector('#resetAll').addEventListener('click',async()=>{if(!confirm('Clear all results, notes, screenshots and global findings on this device. This cannot be undone.'))return;state.results={};state.shots={};state.global={bugs:[],requests:[]};state.gshots={};await Store.set(K_STATE,JSON.stringify({meta:state.meta,results:{}}));await Store.set(K_GLOBAL,JSON.stringify(state.global));const ks=await Store.list('qa:shots:');for(const k of ks)await Store.del(k);const gk=await Store.list('qa:gshots:');for(const k of gk)await Store.del(k);render();toast('Cleared');});
 
   // issues
   wrap.appendChild(el(`<h2 style="font-size:17px;margin:26px 0 12px">Issues to triage <span class="num" style="color:var(--muted);font-size:14px">(${issues.length})</span></h2>`));
@@ -781,6 +903,36 @@ function reportView(){
     </div>`);
     wrap.appendChild(node);
   });
+
+  // global findings
+  ['bugs','requests'].forEach(key=>{
+    const list=state.global[key];
+    if(!list.length)return;
+    const heading=key==='bugs'?'Global bugs':'My change requests';
+    const accent=key==='bugs'?'var(--red)':'var(--blue)';
+    wrap.appendChild(el(`<h2 style="font-size:17px;margin:26px 0 12px">${heading} <span class="num" style="color:var(--muted);font-size:14px">(${list.length})</span></h2>`));
+    list.forEach((item,idx)=>{
+      const sh=state.gshots[item.id]||[];
+      wrap.appendChild(el(`<div class="card issue" style="border-left-color:${accent}">
+        <div class="ihead"><span class="num" style="color:var(--blue);font-weight:600">${key==='bugs'?'BUG':'REQ'} ${idx+1}</span><span style="font-weight:600">${esc(item.title||'(untitled)')}</span></div>
+        ${item.notes?`<p style="margin:9px 0 0;font-size:13.5px;line-height:1.5;color:var(--ink);white-space:pre-wrap">${esc(item.notes)}</p>`:''}
+        <div class="thumbs">${sh.map(src=>`<img src="${src}" style="height:96px;border-radius:8px;border:1px solid var(--border)">`).join('')}</div>
+      </div>`));
+    });
+  });
+
+  // blocked
+  const blocked=ALL_TESTS.filter(t=>state.results[t.id]&&state.results[t.id].status==='blocked');
+  if(blocked.length){
+    wrap.appendChild(el(`<h2 style="font-size:17px;margin:26px 0 12px">Blocked, could not test <span class="num" style="color:var(--muted);font-size:14px">(${blocked.length})</span></h2>`));
+    blocked.forEach(t=>{
+      const r=state.results[t.id];
+      wrap.appendChild(el(`<div class="card" style="padding:12px 16px;margin-bottom:10px;border-left:4px solid #5B6B7A">
+        <div class="ihead"><span class="num" style="color:var(--blue);font-weight:600">${t.id}</span><span style="font-weight:600">${esc(t.title)}</span></div>
+        ${r.notes?`<p style="margin:7px 0 0;font-size:13px;line-height:1.5;color:var(--ink);white-space:pre-wrap">${esc(r.notes)}</p>`:''}
+      </div>`));
+    });
+  }
 
   // full results
   wrap.appendChild(el('<h2 style="font-size:17px;margin:26px 0 12px">All results</h2>'));
@@ -823,7 +975,7 @@ function buildTextReport(){
   L.push('emPartner CRM QA report (LIVE build)');
   L.push((state.meta.tester?'Tester: '+state.meta.tester+'  ':'')+'Date: '+state.meta.date);
   L.push('');
-  L.push('Pass '+c.pass+'  Partial '+c.partial+'  Fail '+c.fail+'  To do '+c.untested+'  of '+TOTAL);
+  L.push('Pass '+c.pass+'  Partial '+c.partial+'  Fail '+c.fail+'  Blocked '+c.blocked+'  To do '+c.untested+'  of '+TOTAL);
   L.push('');
   L.push('Issues to triage:');
   const issues=ALL_TESTS.filter(t=>{const s=state.results[t.id]&&state.results[t.id].status;return s==='fail'||s==='partial';});
@@ -833,6 +985,26 @@ function buildTextReport(){
     L.push('  '+t.id+' '+STATUS[r.status].label.toUpperCase()+': '+t.title+(n?' ['+n+' screenshot'+(n>1?'s':'')+']':''));
     if(r.notes)L.push('      '+r.notes.replace(/\n/g,' '));
   });
+  ['bugs','requests'].forEach(key=>{
+    const list=state.global[key]; if(!list.length)return;
+    L.push('');
+    L.push(key==='bugs'?'Global bugs:':'My change requests:');
+    list.forEach((item,idx)=>{
+      const n=(state.gshots[item.id]||[]).length;
+      L.push('  '+(key==='bugs'?'BUG ':'REQ ')+(idx+1)+': '+(item.title||'(untitled)')+(n?' ['+n+' screenshot'+(n>1?'s':'')+']':''));
+      if(item.notes)L.push('      '+item.notes.replace(/\n/g,' '));
+    });
+  });
+  const blocked=ALL_TESTS.filter(t=>state.results[t.id]&&state.results[t.id].status==='blocked');
+  if(blocked.length){
+    L.push('');
+    L.push('Blocked, could not test:');
+    blocked.forEach(t=>{
+      const r=state.results[t.id];
+      L.push('  '+t.id+': '+t.title);
+      if(r.notes)L.push('      '+r.notes.replace(/\n/g,' '));
+    });
+  }
   L.push('');
   L.push('Send the full HTML report and screenshots to '+REPORT_EMAIL);
   return L.join('\n');
@@ -844,8 +1016,26 @@ function buildHtmlReport(){
     const r=state.results[t.id], s=STATUS[r.status], sh=state.shots[t.id]||[];
     return '<div class="issue" style="border-left:4px solid '+s.col+'"><div class="ihead"><b class="num">'+t.id+'</b> '+esc(t.title)+'<span class="badge" style="background:'+s.col+'">'+s.label+'</span></div>'+(r.notes?'<p>'+esc(r.notes)+'</p>':'')+sh.map(src=>'<img src="'+src+'">').join('')+'</div>';
   }).join(''):'<p class="muted">No Fail or Partial results recorded.</p>';
+  let globalHtml='';
+  ['bugs','requests'].forEach(key=>{
+    const list=state.global[key]; if(!list.length)return;
+    const heading=key==='bugs'?'Global bugs':'My change requests';
+    const accent=key==='bugs'?'#C94246':'#1E8FBC';
+    globalHtml+='<h2>'+heading+' ('+list.length+')</h2>'+list.map((item,idx)=>{
+      const sh=state.gshots[item.id]||[];
+      return '<div class="issue" style="border-left:4px solid '+accent+'"><div class="ihead"><b class="num">'+(key==='bugs'?'BUG ':'REQ ')+(idx+1)+'</b> '+esc(item.title||'(untitled)')+'</div>'+(item.notes?'<p>'+esc(item.notes)+'</p>':'')+sh.map(src=>'<img src="'+src+'">').join('')+'</div>';
+    }).join('');
+  });
+  const blocked=ALL_TESTS.filter(t=>state.results[t.id]&&state.results[t.id].status==='blocked');
+  let blockedHtml='';
+  if(blocked.length){
+    blockedHtml='<h2>Blocked, could not test ('+blocked.length+')</h2>'+blocked.map(t=>{
+      const r=state.results[t.id];
+      return '<div class="issue" style="border-left:4px solid #5B6B7A"><div class="ihead"><b class="num">'+t.id+'</b> '+esc(t.title)+'</div>'+(r.notes?'<p>'+esc(r.notes)+'</p>':'')+'</div>';
+    }).join('');
+  }
   const table=SECTIONS.map(sec=>'<h3><span class="num">'+sec.id+'</span> '+esc(sec.title)+'</h3><table>'+sec.tests.map(t=>{const st=state.results[t.id]&&state.results[t.id].status;const s=st?STATUS[st]:null;return '<tr><td class="num">'+t.id+'</td><td>'+esc(t.title)+'</td><td style="color:'+(s?s.col:'#A0AEC0')+';font-weight:600">'+(s?s.label:'to do')+'</td><td>'+esc((state.results[t.id]||{}).notes||'')+'</td></tr>';}).join('')+'</table>').join('');
-  return '<!doctype html><html lang="en-AU"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>emPartner CRM QA report '+esc(state.meta.date)+'</title><style>body{font-family:Inter,system-ui,sans-serif;color:#0F2B3C;margin:0;background:#F7F8FA}.wrap{max-width:880px;margin:0 auto;padding:28px}h1{font-size:24px;margin:0 0 4px}h2{font-size:18px;margin:30px 0 12px}h3{font-size:14px;margin:18px 0 6px}.muted{color:#A0AEC0}.num{font-family:"DM Mono",monospace}.stats{display:flex;gap:12px;margin:18px 0}.stat{flex:1;border:1px solid #E2E8F0;border-radius:10px;padding:12px 14px;background:#fff}.stat .v{font-size:26px;font-weight:600}.stat .l{font-size:12px;color:#A0AEC0}.issue{background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:14px;margin-bottom:12px}.ihead{font-size:15px}.badge{color:#fff;font-size:11px;font-weight:700;border-radius:6px;padding:2px 8px;margin-left:8px}.issue p{font-size:13.5px;line-height:1.5;color:#3A4A55;white-space:pre-wrap}.issue img{height:140px;border-radius:8px;border:1px solid #E2E8F0;margin:6px 6px 0 0}table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #E2E8F0;border-radius:10px;overflow:hidden;font-size:13px;margin-bottom:14px}td{padding:7px 11px;border-top:1px solid #EDF1F5;vertical-align:top}td:first-child{color:#A0AEC0;width:42px}td:nth-child(2){width:34%}@media print{body{background:#fff}.issue,table{break-inside:avoid}}</style></head><body><div class="wrap"><h1>emPartner&trade; CRM QA report (LIVE build)</h1><p class="muted">'+(state.meta.tester?'Tester: '+esc(state.meta.tester)+' &middot; ':'')+esc(state.meta.date)+'</p><div class="stats"><div class="stat"><div class="v" style="color:#0F6E56">'+c.pass+'</div><div class="l">Pass</div></div><div class="stat"><div class="v" style="color:#EFBD19">'+c.partial+'</div><div class="l">Partial</div></div><div class="stat"><div class="v" style="color:#C94246">'+c.fail+'</div><div class="l">Fail</div></div><div class="stat"><div class="v" style="color:#4B6577">'+c.untested+'</div><div class="l">To do</div></div></div><h2>Issues to triage ('+issues.length+')</h2>'+issuesHtml+'<h2>All results</h2>'+table+'<p class="muted" style="margin-top:24px">Generated '+new Date().toLocaleString('en-AU')+'. Return to '+REPORT_EMAIL+', referencing test numbers.</p></div></body></html>';
+  return '<!doctype html><html lang="en-AU"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>emPartner CRM QA report '+esc(state.meta.date)+'</title><style>body{font-family:Inter,system-ui,sans-serif;color:#0F2B3C;margin:0;background:#F7F8FA}.wrap{max-width:880px;margin:0 auto;padding:28px}h1{font-size:24px;margin:0 0 4px}h2{font-size:18px;margin:30px 0 12px}h3{font-size:14px;margin:18px 0 6px}.muted{color:#A0AEC0}.num{font-family:"DM Mono",monospace}.stats{display:flex;gap:12px;margin:18px 0}.stat{flex:1;border:1px solid #E2E8F0;border-radius:10px;padding:12px 14px;background:#fff}.stat .v{font-size:26px;font-weight:600}.stat .l{font-size:12px;color:#A0AEC0}.issue{background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:14px;margin-bottom:12px}.ihead{font-size:15px}.badge{color:#fff;font-size:11px;font-weight:700;border-radius:6px;padding:2px 8px;margin-left:8px}.issue p{font-size:13.5px;line-height:1.5;color:#3A4A55;white-space:pre-wrap}.issue img{height:140px;border-radius:8px;border:1px solid #E2E8F0;margin:6px 6px 0 0}table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #E2E8F0;border-radius:10px;overflow:hidden;font-size:13px;margin-bottom:14px}td{padding:7px 11px;border-top:1px solid #EDF1F5;vertical-align:top}td:first-child{color:#A0AEC0;width:42px}td:nth-child(2){width:34%}@media print{body{background:#fff}.issue,table{break-inside:avoid}}</style></head><body><div class="wrap"><h1>emPartner&trade; CRM QA report (LIVE build)</h1><p class="muted">'+(state.meta.tester?'Tester: '+esc(state.meta.tester)+' &middot; ':'')+esc(state.meta.date)+'</p><div class="stats"><div class="stat"><div class="v" style="color:#0F6E56">'+c.pass+'</div><div class="l">Pass</div></div><div class="stat"><div class="v" style="color:#EFBD19">'+c.partial+'</div><div class="l">Partial</div></div><div class="stat"><div class="v" style="color:#C94246">'+c.fail+'</div><div class="l">Fail</div></div><div class="stat"><div class="v" style="color:#5B6B7A">'+c.blocked+'</div><div class="l">Blocked</div></div><div class="stat"><div class="v" style="color:#4B6577">'+c.untested+'</div><div class="l">To do</div></div></div><h2>Issues to triage ('+issues.length+')</h2>'+issuesHtml+globalHtml+blockedHtml+'<h2>All results</h2>'+table+'<p class="muted" style="margin-top:24px">Generated '+new Date().toLocaleString('en-AU')+'. Return to '+REPORT_EMAIL+', referencing test numbers.</p></div></body></html>';
 }
 
 /* =========================== store bar ================================ */
@@ -863,6 +1053,10 @@ function renderStoreBar(){
     if(raw){const p=JSON.parse(raw);if(p.meta)state.meta=Object.assign(state.meta,p.meta);if(p.results)state.results=p.results;}
     const keys=await Store.list('qa:shots:');
     for(const k of keys){const v=await Store.get(k);if(v){try{state.shots[k.replace('qa:shots:','')]=JSON.parse(v);}catch(e){}}}
+    const graw=await Store.get(K_GLOBAL);
+    if(graw){try{const g=JSON.parse(graw);state.global={bugs:g.bugs||[],requests:g.requests||[]};}catch(e){}}
+    const gkeys=await Store.list('qa:gshots:');
+    for(const k of gkeys){const v=await Store.get(k);if(v){try{state.gshots[k.replace('qa:gshots:','')]=JSON.parse(v);}catch(e){}}}
   }catch(e){}
   state.loaded=true;
   render();
